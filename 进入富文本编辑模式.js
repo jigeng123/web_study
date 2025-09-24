@@ -1,22 +1,24 @@
 // ====== 全局浮动工具栏 JS ======
 (function () {
-  //遍历所有元素，修改字体为"Microsoft YaHei UI"
+  // 遍历所有元素，修改字体为"Microsoft YaHei UI"
   const allElements = document.querySelectorAll("*");
   allElements.forEach((el) => {
     el.style.fontFamily = '"Microsoft YaHei UI"';
   });
+
+  // 让整个 body 可编辑
   document.body.contentEditable = "true";
-  const editorContainer = document.body; // 作用于整个 body
+  const editorContainer = document.body;
 
   // 创建浮动工具栏 HTML
   const toolbarHTML = `
-    <div id="floating-toolbar">
+    <div id="floating-toolbar" contenteditable="false">
       <button id="bold-btn" title="Bold"><b>B</b></button>
       <button id="italic-btn" title="Italic"><i>I</i></button>
       <button id="underline-btn" title="Underline"><u>U</u></button>
       <div style="width:1px;height:18px;background:rgba(255,255,255,0.12);margin:0 6px;"></div>
       <button id="link-btn" title="Link">🔗</button>
-      <button id="color-btn" title="Color">🎨<div id="color-palette"></div></button>
+      <button id="color-btn" title="Color">🎨<div id="color-palette" contenteditable="false"></div></button>
       <button id="clear-format-btn" title="Clear">Tx</button>
     </div>
   `;
@@ -144,14 +146,21 @@
     });
   }
 
-  // 富文本选区
   let currentRange = null;
 
-  editorContainer.addEventListener("mouseup", () => {
+  // 阻止工具栏和调色板冒泡
+  floatingToolbar.addEventListener("mousedown", (e) => e.stopPropagation());
+  colorPalette.addEventListener("mousedown", (e) => e.stopPropagation());
+  colorBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+
+  // mouseup 选区逻辑
+  editorContainer.addEventListener("mouseup", (e) => {
+    if (floatingToolbar.contains(e.target) || colorPalette.contains(e.target))
+      return;
+
     setTimeout(() => {
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed && editorContainer.contains(sel.anchorNode)) {
-        // 排除 code 标签
         const invalidElements =
           editorContainer.querySelectorAll("code, code span");
         for (let el of invalidElements) if (el.contains(sel.anchorNode)) return;
@@ -176,8 +185,12 @@
     }, 10);
   });
 
+  // 点击空白隐藏工具栏
   document.addEventListener("mousedown", (e) => {
-    if (!floatingToolbar.contains(e.target)) {
+    if (
+      !floatingToolbar.contains(e.target) &&
+      !colorPalette.contains(e.target)
+    ) {
       const sel = window.getSelection();
       if (sel) sel.removeAllRanges();
       floatingToolbar.style.display = "none";
