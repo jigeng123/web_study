@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Simple Kanban 看板模板</title>
     <style>
+      /* ji2全局颜色-按钮-卡片-背景 */
       :root {
-        --bg: #f4f7fb;
-        --card: #fff;
-        --muted: #6b7280;
-        --accent: #2563eb;
+        --bg: #232b35;
+        --card: #f8e4b3;
+        --muted: #6186cf;
+        --accent: #562471;
       }
       * {
         box-sizing: border-box;
@@ -20,13 +21,14 @@
         background: var(--bg);
         color: #111;
       }
+      /* ji2标题栏 */
       header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         padding: 14px 20px;
-        background: #fff;
-        border-bottom: 1px solid #e6e9ef;
+        background: linear-gradient(90deg, #a2afe6, #e87bb2, #71f362);
+        border-bottom: 1px solid #0c3483;
       }
       header h1 {
         font-size: 16px;
@@ -58,8 +60,8 @@
         overflow: auto;
         height: calc(100vh - 75px);
       }
+      /* ji2列表样式 */
       .column {
-        background: linear-gradient(180deg, #fafbff, #ffffff);
         min-width: 280px;
         border-radius: 10px;
         padding: 12px;
@@ -67,6 +69,17 @@
         display: flex;
         flex-direction: column;
         max-height: 100%;
+      }
+      .board .column:nth-child(3n + 1) {
+        background: linear-gradient(180deg, #a2afe6, #cfb0b0);
+      }
+
+      .board .column:nth-child(3n + 2) {
+        background: linear-gradient(180deg, #e87bb2, #f3faca);
+      }
+
+      .board .column:nth-child(3n) {
+        background: linear-gradient(180deg, #71f362, #cfb0b0);
       }
       .col-header {
         display: flex;
