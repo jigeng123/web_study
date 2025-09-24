@@ -1,0 +1,128 @@
+<html>
+  <head>
+    <title>Quicker作为后端的测试</title>
+    <style>
+      p {
+        background-color: black; /* 背景为黑色 */
+        color: white; /* 字体为白色 */
+        padding: 8px; /* 增加内边距让内容更美观 */
+        font-family: "Microsoft YaHei UI", sans-serif; /* 指定字体 */
+        border: 2px solid transparent; /* 初始无边框 */
+        transition: border-color 0.3s ease; /* 平滑过渡 */
+      }
+
+      p:hover {
+        border-color: red; /* 鼠标悬浮时出现红色边框 */
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Quicker作为后端的测试</h1>
+
+    <button onclick="readVar()">运行readVar，读取后端变量值</button>
+    <button onclick="setVar()">
+      运行setVar，设置变量值并关闭窗口，提示修改的值
+    </button>
+    <button onclick="testSubprogram()">运行testSubprogram，执行子程序</button>
+
+    <button onclick="testSubprogramWithNetwork()">
+      运行testSubprogramWithNetwork，汉字转拼音，显示在窗口
+    </button>
+    <button onclick="create()">运行create，创建一个p元素到domTree</button>
+    <hr />
+    <div id="content"></div>
+
+    <script>
+      window.chrome.webview.addEventListener("message", (event) =>
+        alert(event.data)
+      );
+      function create(text) {
+        // 创建 <p> 元素
+        const p = document.createElement("p");
+        // 设置内容
+        p.textContent = text || "这是一个段落";
+        // 添加到 body
+        document.body.appendChild(p);
+      }
+      // 同步方式
+      // ji1读取quicker后端变量
+      async function readVar() {
+        // 返回文本变量
+        alert(await $quicker.getVar("text"));
+
+        // 返回列表变量（转换成文本数组）
+        alert(chrome.webview.hostObjects.sync.v.getVar("list"));
+
+        // 返回词典所有内容的json文本（示例为异步方式）
+        var v = await chrome.webview.hostObjects.v;
+        var dict = await v.getVar("dict");
+        alert(dict);
+
+        // 返回词典的某个键的值
+        alert(chrome.webview.hostObjects.sync.v.getDictItemValue("dict", "c"));
+      }
+      //ji2传给quicker要其更新变量
+      function setVar() {
+        // 设置列表变量值
+        chrome.webview.hostObjects.sync.v.setVar("list", [
+          "替换",
+          "的",
+          "列",
+          "表",
+        ]);
+
+        // 设置文本值
+        chrome.webview.hostObjects.sync.v.setVar("text", "替换的文本");
+
+        // 设置词典值
+        chrome.webview.hostObjects.sync.v.setDictByJson(
+          "dict",
+          "{a: 替换的, b:词典}"
+        );
+
+        // 设置词典的某一个键的值
+        chrome.webview.hostObjects.sync.v.setDictItemValue(
+          "dict",
+          "c",
+          "单独设置的值"
+        );
+
+        window.close();
+      }
+      //ji3调用quicker子程序
+      // 调用子程序：返回原始输入值
+      async function testSubprogram() {
+        var obj = { input: "Hello Quicker!", age: 3 };
+        await $quicker.subprogram(
+          "test",
+          JSON.stringify(obj),
+          false,
+          (success, data) => {
+            alert("success:" + success + "\n" + data);
+          }
+        );
+      }
+
+      // ji3调用子程序进行网络请求
+      async function testSubprogramWithNetwork() {
+        var cn = prompt("请输入汉字字符串：", "中国人");
+        if (cn != null) {
+          var inParams = { input: cn, separator: "," };
+          await $quicker.subprogram(
+            "转换拼音",
+            JSON.stringify(inParams),
+            false,
+            (success, data) => {
+              if (success) {
+                var result = JSON.parse(data);
+                document.getElementById("content").innerText = result.output;
+              } else {
+                alert("出错了：" + data);
+              }
+            }
+          );
+        }
+      }
+    </script>
+  </body>
+</html>

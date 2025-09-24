@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>简单拖拽示例（带 placeholder）</title>
+    <style>
+      body {
+        /* Prevent the user selecting text in the example */
+        user-select: none;
+      }
+
+      #draggable {
+        text-align: center;
+        background: white;
+      }
+
+      .dropzone {
+        width: 200px;
+        height: 20px;
+        background: blueviolet;
+        margin: 10px;
+        padding: 10px;
+      }
+
+      .dropzone.dragover {
+        background-color: purple;
+      }
+
+      .dragging {
+        opacity: 0.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dropzone">
+      <div id="draggable" draggable="true">这个 div 可以拖动</div>
+    </div>
+    <div class="dropzone" id="droptarget"></div>
+
+    <script>
+      /* JIGENG拖拽 */
+      let dragged;
+      const source = document.getElementById("draggable");
+      //ji1拖拽块dragstart-拖拽块在拖拽开始触发，将其class添加dragging
+      source.addEventListener("dragstart", (event) => {
+        // 保存被拖动元素的引用
+        dragged = event.target;
+        //设置dragging的css，这里是让他变透明
+        event.target.classList.add("dragging");
+        // console.log(`dragstart事件的target,点击一瞬间触发${event.target}`);
+        // console.log(dragged);
+      });
+      //ji2拖拽块drag-拖拽块在拖动过程中会一直触发
+      source.addEventListener("drag", (event) => {
+        // console.log(`drag事件的target,会一直触发${event.target}`);
+      });
+      //ji3拖拽容器dragover-拖拽块在容器上时会一直触发的事件 */
+      const target = document.getElementById("droptarget");
+      target.addEventListener(
+        "dragover",
+        (event) => {
+          // console.log(`dragover事件的target,放置目标会一直触发${event.target}`);
+          event.preventDefault();
+        },
+        false
+      );
+
+      // ji4拖拽容器dragenter-拖拽块进入一瞬间触发,添加dragover(css设置了高亮显示该class)
+      target.addEventListener("dragenter", (event) => {
+        if (event.target.classList.contains("dropzone")) {
+          event.target.classList.add("dragover");
+          console.log(
+            `dragenter事件的target,拖拽块进入容器时,拖拽容器发出${event.target}`
+          );
+        }
+      });
+      // ji4拖拽容器dragleave-拖拽块离开一瞬间触发,删除dragover(css设置了高亮显示该class)
+      target.addEventListener("dragleave", (event) => {
+        if (event.target.classList.contains("dropzone")) {
+          event.target.classList.remove("dragover");
+          console.log(
+            `dragleave事件的target,拖拽块离开容器时,拖拽容器发出${event.target}`
+          );
+        }
+      });
+      //ji4拖拽容器drop--拖拽块在容器上方停止拖拽时(释放拖拽块)触发
+      target.addEventListener("drop", (event) => {
+        // 阻止默认行为
+        event.preventDefault();
+        console.log(
+          `drop事件的target,拖拽块被松开,所在的容器发出${event.target}`
+        );
+        // 将被拖动元素移动到选定的目标元素中
+        if (event.target.classList.contains("dropzone")) {
+          event.target.classList.remove("dragover");
+          dragged.parentNode.removeChild(dragged);
+          event.target.appendChild(dragged);
+        }
+      });
+      // ji5拖拽块dragend-拖拽块拖动结束时触发
+      source.addEventListener("dragend", (event) => {
+        event.target.classList.remove("dragging");
+        console.log(`dragover事件的target,拖拽结束发出${event.target}`);
+        console.log(`${event.dataTransfer}`);
+      });
+    </script>
+  </body>
+</html>

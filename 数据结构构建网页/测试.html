@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>数据模型渲染示例</title>
+    <style>
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f5f7fa;
+        padding: 20px;
+        color: #222;
+      }
+      .node {
+        background: white;
+        border-radius: 8px;
+        padding: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        margin-bottom: 12px;
+      }
+      .node h3 {
+        margin: 0 0 8px 0;
+        font-size: 18px;
+      }
+      .meta {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 8px;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .badge {
+        background: #eef;
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 12px;
+      }
+      .marker {
+        font-size: 14px;
+        margin-right: 6px;
+      }
+      .tags {
+        display: inline-flex;
+        gap: 6px;
+      }
+      .tag {
+        background: #eee;
+        color: #333;
+        padding: 2px 6px;
+        border-radius: 6px;
+        font-size: 12px;
+      }
+      .code-block {
+        background: #0f1724;
+        color: #e6e6e6;
+        padding: 10px;
+        border-radius: 6px;
+        overflow: auto;
+        font-family: monospace;
+        font-size: 13px;
+      }
+      .fields {
+        margin-top: 8px;
+        font-size: 13px;
+        color: #333;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .field {
+        background: #fafafa;
+        border: 1px solid #efefef;
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .done {
+        text-decoration: line-through;
+        opacity: 0.7;
+      }
+      a.node-link {
+        color: #065fd4;
+        text-decoration: none;
+      }
+      .position {
+        font-size: 12px;
+        color: #888;
+      }
+      pre {
+        margin: 0;
+      }
+      .children {
+        margin-top: 10px;
+        padding-left: 8px;
+        border-left: 2px dashed #eee;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script>
+      // ----- 示例数据（基于你提供的结构，修正了 script 字符串引号问题）-----
+      const data = {
+        type: "p",
+        id: "unique-id-123",
+        text: "这是文本内容",
+        isToggle: false,
+        children: [
+          {
+            type: "h",
+            id: "child-id-1",
+            text: "标题文本",
+          },
+          {
+            type: "code",
+            id: "child-id-2",
+            text: "console.log('Hello World');",
+          },
+        ],
+        isDone: false,
+        tag: ["工作", "学习"],
+        marker: ["✅", "⭐"],
+        attribute: {
+          customKey: "customValue",
+        },
+        link: "https://example.com",
+        data: "2025-09-24T00:00:00Z",
+        deadline: "2025-10-01T23:59:59Z",
+        x: 100,
+        y: 200,
+        broad: {
+          style: "solid",
+          color: "#000000",
+        },
+        background: "#FFFFFF",
+        font: {
+          type: "Arial",
+          fontsize: 14,
+          color: "#333333",
+        },
+        note: "这是备注",
+        script: "console.log('helloworld');",
+      };
+
+      // ----- 工具函数：安全设置文本（避免 innerHTML 注入） -----
+      function setText(el, text) {
+        el.textContent = text == null ? "" : String(text);
+      }
+
+      // ----- 主渲染函数：根据节点对象创建 DOM 元素 -----
+      function renderNode(node, options = {}) {
+        // options:
+        //  - executeScript: boolean (是否执行 node.script，默认 false)
+        const executeScript = !!options.executeScript;
+
+        const wrap = document.createElement("div");
+        wrap.className = "node";
+        if (node.background) wrap.style.background = node.background;
+        if (node.broad && node.broad.color)
+          wrap.style.border = `1px ${node.broad.style || "solid"} ${
+            node.broad.color
+          }`;
+
+        // header / content by type
+        let contentEl;
+        switch ((node.type || "p").toLowerCase()) {
+          case "h":
+            contentEl = document.createElement("h3");
+            setText(contentEl, node.text || "");
+            break;
+          case "code":
+            contentEl = document.createElement("pre");
+            contentEl.className = "code-block";
+            const code = document.createElement("code");
+            setText(code, node.text || "");
+            contentEl.appendChild(code);
+            break;
+          case "p":
+          default:
+            contentEl = document.createElement("div");
+            setText(contentEl, node.text || "");
+            break;
+        }
+
+        // apply font styling if provided
+        if (node.font) {
+          if (node.font.type) contentEl.style.fontFamily = node.font.type;
+          if (node.font.fontsize)
+            contentEl.style.fontSize = node.font.fontsize + "px";
+          if (node.font.color) contentEl.style.color = node.font.color;
+        }
+
+        // done -> strike-through
+        if (node.isDone) contentEl.classList.add("done");
+
+        wrap.appendChild(contentEl);
+
+        // meta row (id, markers, tags, link, date, deadline, position)
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        if (node.marker && Array.isArray(node.marker)) {
+          node.marker.forEach((m) => {
+            const sp = document.createElement("span");
+            sp.className = "marker";
+            setText(sp, m);
+            meta.appendChild(sp);
+          });
+        }
+
+        // tags
+        if (node.tag && Array.isArray(node.tag) && node.tag.length) {
+          const tagsWrap = document.createElement("div");
+          tagsWrap.className = "tags";
+          node.tag.forEach((t) => {
+            const tg = document.createElement("span");
+            tg.className = "tag";
+            setText(tg, t);
+            tagsWrap.appendChild(tg);
+          });
+          meta.appendChild(tagsWrap);
+        }
+
+        // link
+        if (node.link) {
+          const a = document.createElement("a");
+          a.className = "node-link";
+          a.href = node.link;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          setText(a, "打开链接");
+          meta.appendChild(a);
+        }
+
+        // id badge
+        if (node.id) {
+          const idBadge = document.createElement("span");
+          idBadge.className = "badge";
+          setText(idBadge, `id: ${node.id}`);
+          meta.appendChild(idBadge);
+        }
+
+        // dates
+        if (node.data) {
+          try {
+            const d = new Date(node.data);
+            const fld = document.createElement("span");
+            fld.className = "field";
+            setText(fld, `创建: ${d.toLocaleString(undefined)}`);
+            meta.appendChild(fld);
+          } catch (e) {}
+        }
+        if (node.deadline) {
+          try {
+            const d2 = new Date(node.deadline);
+            const fld2 = document.createElement("span");
+            fld2.className = "field";
+            setText(fld2, `截止: ${d2.toLocaleString(undefined)}`);
+            meta.appendChild(fld2);
+          } catch (e) {}
+        }
+
+        // position
+        if (typeof node.x === "number" || typeof node.y === "number") {
+          const pos = document.createElement("span");
+          pos.className = "position";
+          setText(pos, `坐标: (${node.x ?? "-"}, ${node.y ?? "-"})`);
+          meta.appendChild(pos);
+        }
+
+        wrap.appendChild(meta);
+
+        // attribute map -> dataset or data-*
+        if (node.attribute && typeof node.attribute === "object") {
+          Object.keys(node.attribute).forEach((k) => {
+            try {
+              wrap.dataset[k] = String(node.attribute[k]);
+            } catch (e) {}
+          });
+        }
+
+        // note
+        if (node.note) {
+          const noteEl = document.createElement("div");
+          noteEl.className = "fields";
+          const noteField = document.createElement("div");
+          noteField.className = "field";
+          setText(noteField, `备注: ${node.note}`);
+          noteEl.appendChild(noteField);
+          wrap.appendChild(noteEl);
+        }
+
+        // children recursion
+        if (
+          node.children &&
+          Array.isArray(node.children) &&
+          node.children.length
+        ) {
+          const childrenWrap = document.createElement("div");
+          childrenWrap.className = "children";
+          node.children.forEach((child) => {
+            const childEl = renderNode(child, options);
+            childrenWrap.appendChild(childEl);
+          });
+          wrap.appendChild(childrenWrap);
+        }
+
+        // script: 默认不执行。若确实需要执行，请在 options.executeScript = true 时执行（并且请确保数据可信）
+        if (node.script) {
+          const scriptNotice = document.createElement("div");
+          scriptNotice.className = "fields";
+          const field = document.createElement("div");
+          field.className = "field";
+          setText(field, `包含脚本（默认未执行）`);
+          scriptNotice.appendChild(field);
+          wrap.appendChild(scriptNotice);
+
+          if (executeScript) {
+            try {
+              // 小心：仅在你完全信任数据时启用
+              // eslint-disable-next-line no-eval
+              eval(node.script);
+            } catch (e) {
+              console.error("执行脚本时出错：", e);
+            }
+          }
+        }
+
+        return wrap;
+      }
+
+      // ----- 渲染到页面 -----
+      const app = document.getElementById("app");
+      // 例子：默认不执行脚本
+      app.appendChild(renderNode(data, { executeScript: false }));
+
+      // 如果想调试并允许执行 script，把上面改为 true（仅在完全信任数据时）
+      // app.appendChild(renderNode(data, { executeScript: true }));
+    </script>
+  </body>
+</html>

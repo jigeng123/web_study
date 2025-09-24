@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Simple Kanban 看板模板</title>
     <style>
-      /* ji2全局颜色-按钮-卡片-背景 */
+      /* ji1全局颜色-按钮-卡片-背景 */
       :root {
         --bg: #232b35;
         --card: #f8e4b3;
@@ -21,7 +21,8 @@
         background: var(--bg);
         color: #111;
       }
-      /* ji2标题栏 */
+
+      /* ji1标题栏 */
       header {
         display: flex;
         align-items: center;
@@ -60,7 +61,7 @@
         overflow: auto;
         height: calc(100vh - 75px);
       }
-      /* ji2列表样式 */
+      /* ji1列表样式 */
       .column {
         min-width: 280px;
         border-radius: 10px;
@@ -157,12 +158,6 @@
     <!-- 主区域-创建不同的列 -->
     <main class="board" id="board"></main>
 
-    <footer>
-      <div class="small">
-        提示：拖拽卡片到不同列以改变状态。数据保存在本地（localStorage）。
-      </div>
-    </footer>
-
     <input
       type="file"
       id="file-input"
@@ -214,6 +209,7 @@
 
       async function load() {
         const raw = localStorage.getItem(STORAGE_KEY);
+        // quicker替换成:const raw =await $quicker.getVar("kanbanDate");
         if (raw) {
           try {
             state = JSON.parse(raw);
@@ -236,8 +232,9 @@
       }
 
       async function save() {
-        content = JSON.stringify(state);
+        const content = JSON.stringify(state);
         localStorage.setItem(STORAGE_KEY, content);
+        // quicker替换成:chrome.webview.hostObjects.sync.v.setVar("kanbanDate", content);
       }
       //ji1构建唯一ID
       function uid() {
@@ -283,14 +280,17 @@
           save();
         });
 
-        // Drag & drop target handling
+        // ji1拖拽事件
+        // ji2在容器上悬浮
         el.addEventListener("dragover", (e) => {
           e.preventDefault();
           el.classList.add("drop-target");
         });
+        //ji2离开容器
         el.addEventListener("dragleave", () =>
           el.classList.remove("drop-target")
         );
+        //ji2释放时
         el.addEventListener("drop", (e) => {
           e.preventDefault();
           el.classList.remove("drop-target");
@@ -324,13 +324,17 @@
         el.querySelector(".card-desc").addEventListener("input", (e) => {
           updateCardField(card.id, "desc", e.target.textContent);
         });
-
-        // drag start
+        //TODO拖拽事件全局监听,不要在构建时添加事件
+        // j21拖拽开始
         el.addEventListener("dragstart", (ev) => {
           ev.dataTransfer.setData("text/plain", card.id);
           el.classList.add("dragging");
         });
-        el.addEventListener("dragend", () => el.classList.remove("dragging"));
+        //ji2拖拽结束
+        el.addEventListener("dragend", () => {
+          el.classList.remove("dragging");
+          save();
+        });
 
         return el;
       }
