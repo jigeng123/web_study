@@ -33,7 +33,44 @@ const propertyHandlers = {
     const contentEl = findOrCreateElement(element, ".content", "p", "content");
     contentEl.textContent = content;
   },
+  /**
+   * 处理 'dics' 属性 (这是一个字典对象)
+   * @param {HTMLElement} element - 节点的主元素
+   * @param {string[]} dicsData - 字典对象
+   */
+  dics: (element, dicsData) => {
+    if (!Array.isArray(dicsData)) return;
+    //创建一个dicscontainer
+    const dicsContainer = findOrCreateElement(
+      element,
+      ".dics-container",
+      "div",
+      "dics-container"
+    );
+    function renderdicsData(dicsData, dicsContainer) {
+      dicsData.forEach((item) => {
+        const id = item.id;
+        if (!id) {
+          console.error("item项必须有一个 'id' 属性。", data);
+          return;
+        }
+        const item = dicsContainer.getElementById(item.id);
+        if (!item) {
+          item = document.createElement("item");
+          item.id = generateId();
+        }
+        const name = item.name;
+        const color = item.color;
+        const backgroundColor = item.backgroundColor;
 
+        item.textContent = name;
+        item.style.color = color;
+        item.style.backgroundColor = backgroundColor;
+      });
+    }
+    // 递归调用 renderData 更新item
+    renderdicsData(dicsData, dicsContainer);
+  },
   /**
    * 处理 'tags' 属性 (这是一个数组)
    * @param {HTMLElement} element - 节点的主元素

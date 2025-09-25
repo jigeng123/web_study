@@ -1,3 +1,60 @@
+// 辅助函数:创建id
+function generateId() {
+  return (
+    "id-" +
+    Date.now().toString(36) +
+    "-" +
+    Math.random().toString(36).substr(2, 9)
+  );
+}
+
+function rendertagsData(tagsData, tagsContainer) {
+  tagsData.forEach((tag) => {
+    const id = tag.id;
+    if (!id) {
+      console.error("tag项必须有一个 'id' 属性。", tag);
+      return;
+    }
+    let tagitem = document.getElementById(id);
+    if (!tagitem) {
+      tagitem = document.createElement("tag");
+      tagitem.id = id;
+      tagsContainer.appendChild(tagitem); // 别忘了挂到容器
+    }
+
+    const name = tag.name || "没找到name";
+    const color = tag.color || "black";
+    const backgroundColor = tag.backgroundColor || "transparent";
+
+    tagitem.textContent = name;
+    tagitem.style.color = color;
+    tagitem.style.backgroundColor = backgroundColor;
+  });
+}
+
+function rendertasksData(tasksData, tasksContainer) {
+  tasksData.forEach((task) => {
+    const id = task.id;
+    if (!id) {
+      console.error("task项必须有一个 'id' 属性。", task);
+      return;
+    }
+    let taskitem = document.getElementById(id);
+    if (!taskitem) {
+      taskitem = document.createElement("task");
+      taskitem.id = id;
+    }
+    const title = task.title || "没找到title";
+    const color = task.style.color || "black";
+    const backgroundColor = task.style.backgroundColor || "transparent";
+
+    taskitem.textContent = title;
+    taskitem.style.color = color;
+    taskitem.style.backgroundColor = backgroundColor;
+    // propertyHandlers["content"](tasksContainer, task["content"]);
+    propertyHandlers["tags"](tasksContainer, task["tags"]);
+  });
+}
 /**
  * 查找或创建一个子元素。
  * @param {HTMLElement} parent - 父元素。
@@ -25,39 +82,46 @@ const findOrCreateElement = (parent, selector, tagName, className) => {
 
 const propertyHandlers = {
   /**
-   * 处理 'content' 属性
+   * 处理 'title' 属性
    * @param {HTMLElement} element - 节点的主元素
-   * @param {string} content - 文本内容
+   * @param {string} title - 文本内容
    */
-  content: (element, content) => {
-    const contentEl = findOrCreateElement(element, ".content", "p", "content");
-    contentEl.textContent = content;
+  title: (element, title) => {
+    const titleEl = findOrCreateElement(element, ".title", "h2", "title");
+    titleEl.textContent = title;
   },
-
   /**
-   * 处理 'tags' 属性 (这是一个数组)
+   * 处理 'tags' 属性 (递归调用渲染)
+   * 😲不递归
    * @param {HTMLElement} element - 节点的主元素
-   * @param {string[]} tags - 标签数组
+   * @param {Object[]} tagsData - 子节点数据数组
    */
-  tags: (element, tags) => {
-    if (!Array.isArray(tags)) return; // 安全检查
-
+  tags: (element, tagsData) => {
+    if (!Array.isArray(tagsData)) return;
+    //创建一个tagscontainer
     const tagsContainer = findOrCreateElement(
       element,
       ".tags-container",
       "div",
       "tags-container"
     );
-    const ul = findOrCreateElement(tagsContainer, "ul", "ul", "");
 
-    // 清空现有标签以反映更新
-    ul.innerHTML = "";
+    // 调用 rendertagsData 更新tag
+    rendertagsData(tagsData, tagsContainer);
+  },
 
-    tags.forEach((tag) => {
-      const li = document.createElement("li");
-      li.textContent = tag;
-      ul.appendChild(li);
-    });
+  tasks: (element, tasksData) => {
+    if (!Array.isArray(tasksData)) return;
+    //创建一个taskscontainer
+    const tasksContainer = findOrCreateElement(
+      element,
+      ".tasks-container",
+      "div",
+      "tasks-container"
+    );
+
+    // 调用 rendertasksData 更新task
+    rendertasksData(tasksData, tasksContainer);
   },
 
   /**
@@ -82,23 +146,14 @@ const propertyHandlers = {
       metadataContainer.appendChild(span);
     }
   },
-
   /**
-   * 处理 'children' 属性 (递归调用渲染)
+   * 处理 'content' 属性
    * @param {HTMLElement} element - 节点的主元素
-   * @param {Object[]} childrenData - 子节点数据数组
+   * @param {string} content - 文本内容
    */
-  children: (element, childrenData) => {
-    if (!Array.isArray(childrenData)) return;
-
-    const childrenContainer = findOrCreateElement(
-      element,
-      ".children-container",
-      "div",
-      "children-container"
-    );
-    // 递归调用 renderData 来处理子节点
-    renderData(childrenData, childrenContainer);
+  content: (element, content) => {
+    const contentEl = findOrCreateElement(element, ".content", "p", "content");
+    contentEl.textContent = content;
   },
 };
 
@@ -122,10 +177,24 @@ function processNode(data, parentElement) {
   } else {
     // 不存在则创建
     console.log(`创建元素: #${data.id}`);
-    nodeElement = document.createElement("div");
-    nodeElement.id = data.id;
-    nodeElement.className = "node";
-    parentElement.appendChild(nodeElement);
+    const elType = data.type.toLowerCase();
+    if (elType) {
+      nodeElement = document.createElement(elType);
+      nodeElement.id = data.id;
+      nodeElement.className = "node";
+      parentElement.appendChild(nodeElement);
+      const style = data.style;
+      if (style) {
+        nodeElement.style.color = style.color;
+        nodeElement.style.backgroundColor = style.backgroundColor;
+      } else {
+        nodeElement.style.color = "#111111";
+        nodeElement.style.backgroundColor = "rgba(255, 255, 255, 1)";
+      }
+    } else {
+      console.error("根据 'id' 创建元素时,没有type。", data);
+      return;
+    }
   }
 
   // 2. 遍历数据对象的属性，并使用对应的处理器进行渲染

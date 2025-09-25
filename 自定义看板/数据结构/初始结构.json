@@ -5,21 +5,23 @@
     "title": "TODO",
     "tags": [
       {
+        "id": "unitagid-1",
         "name": "代办",
         "color": "#030303ff",
-        "background-color": "#e5efbbff"
+        "backgroundColor": "#e5efbbff"
       },
       {
+        "id": "unitagid-2",
         "name": "测试",
         "color": "#030303ff",
-        "background-color": "#f7c2efff"
+        "backgroundColor": "#f7c2efff"
       }
     ],
     "style": {
       "color": "#ffffffff",
-      "background-color": "#535e25ff"
+      "backgroundColor": "#535e25ff"
     },
-    "children": [
+    "tasks": [
       {
         "id": "child-1",
         "type": "task",
@@ -27,21 +29,25 @@
         "content": "custom content",
         "tags": [
           {
+            "id": "unitagid-3",
             "name": "study",
             "color": "#030303ff",
-            "background-color": "#e5efbbff"
+            "backgroundColor": "#e5efbbff"
           },
           {
+            "id": "unitagid-4",
             "name": "eat",
             "color": "#030303ff",
-            "background-color": "#e5efbbff"
+            "backgroundColor": "#e5efbbff"
           }
         ],
-        "createdate": "2023-10-02",
-        "deadline": "2025-11-02",
+        "metadata": {
+          "createdate": "2023-10-02",
+          "deadline": "2025-11-02"
+        },
         "style": {
           "color": "#030303ff",
-          "background-color": "#e5efbbff"
+          "backgroundColor": "#e5efbbff"
         }
       },
       {
@@ -51,80 +57,90 @@
         "content": "custom content2",
         "tags": [
           {
+            "id": "unitagid-5",
             "name": "sport",
             "color": "#030303ff",
-            "background-color": "#e5efbbff"
+            "backgroundColor": "#e5efbbff"
           }
         ],
-        "createdate": "2023-12-02",
-        "deadline": "2025-10-03",
+        "metadata": {
+          "createdate": "2023-12-02",
+          "deadline": "2025-10-03"
+        },
         "style": {
           "color": "#030303ff",
-          "background-color": "#e5efbbff"
+          "backgroundColor": "#e5efbbff"
         }
       }
     ]
   },
   {
-    "id": "unique-id-1",
+    "id": "unique-id-10",
     "type": "column",
     "title": "DOING",
     "tags": [
       {
+        "id": "unitagid-6",
         "name": "hhh",
         "color": "#030303ff",
-        "background-color": "#e5efbbff"
+        "backgroundColor": "#e5efbbff"
       },
       {
+        "id": "unitagid-7",
         "name": "测试",
         "color": "#030303ff",
-        "background-color": "#e5efbbff"
+        "backgroundColor": "#e5efbbff"
       }
     ],
     "style": {
       "color": "#030303ff",
-      "background-color": "#e5efbbff"
+      "backgroundColor": "#e5efbbff"
     },
-    "children": []
+    "tasks": []
   },
   {
-    "id": "unique-id-1",
+    "id": "unique-id-12",
     "type": "finishColumn",
     "title": "FINISH",
     "tags": [
       {
+        "id": "unitagid-8",
         "name": "测试",
         "color": "#030303ff",
-        "background-color": "#e5efbbff"
+        "backgroundColor": "#e5efbbff"
       }
     ],
     "style": {
       "color": "#030303ff",
-      "background-color": "#e5efbbff"
+      "backgroundColor": "#e5efbbff"
     },
-    "children": [
+    "tasks": [
       {
-        "id": "child-1",
+        "id": "child-12",
         "type": "task",
         "title": "具体事项3",
         "content": "custom content1",
         "tags": [
           {
+            "id": "unitagid-9",
             "name": "study",
             "color": "#030303ff",
-            "background-color": "#e5efbbff"
+            "backgroundColor": "#e5efbbff"
           },
           {
+            "id": "unitagid-10",
             "name": "eat",
             "color": "#030303ff",
-            "background-color": "#e5efbbff"
+            "backgroundColor": "#e5efbbff"
           }
         ],
-        "createdate": "2023-10-02",
-        "deadline": "2025-11-02",
+        "metadata": {
+          "createdate": "2023-10-02",
+          "deadline": "2025-11-02"
+        },
         "style": {
           "color": "#030303ff",
-          "background-color": "#e5efbbff"
+          "backgroundColor": "#e5efbbff"
         }
       }
     ]
