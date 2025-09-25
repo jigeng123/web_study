@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>轻量 Kanban 示例</title>
+    <style>
+      :root {
+        --bg: #f4f6f8;
+        --card: #fff;
+        --accent: #2b8aef;
+      }
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto,
+          "Helvetica Neue", Arial;
+        margin: 0;
+        background: var(--bg);
+        color: #111;
+      }
+      header {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 12px;
+        background: #fff;
+        border-bottom: 1px solid #e6e9ee;
+      }
+      header .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      button {
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #d0d6df;
+        background: #fff;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--accent);
+        color: #fff;
+        border-color: transparent;
+      }
+      .board {
+        display: flex;
+        gap: 12px;
+        padding: 16px;
+        overflow: auto;
+        height: calc(100vh - 72px);
+      }
+      .column {
+        background: linear-gradient(180deg, #fbfdff, #f7fbff);
+        min-width: 280px;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 6px 18px rgba(28, 40, 56, 0.06);
+        display: flex;
+        flex-direction: column;
+        max-height: 100%;
+      }
+      .column h3 {
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .col-cards {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        overflow: auto;
+        padding: 6px;
+      }
+      .card {
+        background: var(--card);
+        padding: 8px;
+        border-radius: 8px;
+        box-shadow: 0 1px 0 rgba(9, 10, 11, 0.03);
+        cursor: grab;
+        border: 1px solid rgba(0, 0, 0, 0.03);
+      }
+      .card.dragging {
+        opacity: 0.4;
+      }
+      .placeholder {
+        height: 56px;
+        border: 2px dashed #cdd7e3;
+        border-radius: 8px;
+        background: linear-gradient(90deg, #fff, #fbfbfb);
+      }
+      .card .row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .card .title {
+        font-weight: 600;
+        outline: none;
+      }
+      .muted {
+        font-size: 12px;
+        color: #667085;
+      }
+      .small {
+        font-size: 12px;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+      .tag {
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 12px;
+      }
+      .card-settings {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .tag-editor {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .filter-area {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      input[type="color"] {
+        width: 34px;
+        height: 28px;
+        padding: 0;
+        border: none;
+        background: transparent;
+      }
+      .input {
+        padding: 6px;
+        border-radius: 8px;
+        border: 1px solid #d6dbe4;
+      }
+      .column-controls {
+        display: flex;
+        gap: 6px;
+      }
+      textarea {
+        width: 100%;
+        resize: vertical;
+        min-height: 60px;
+        border-radius: 6px;
+        padding: 6px;
+        border: 1px solid #e6ebf2;
+      }
+      .hidden {
+        display: none;
+      }
+      .tag-pill {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+      }
+      footer {
+        padding: 8px;
+        text-align: center;
+        color: #9aa4b2;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div style="font-weight: 700">Kanban 示例</div>
+      <div class="controls">
+        <button id="add-column">新建列</button>
+        <button id="add-card">在第一个列新建卡片</button>
+        <button id="export">导出 JSON</button>
+        <button id="import">导入 JSON</button>
+        <input
+          id="json-import"
+          type="file"
+          accept="application/json"
+          class="hidden"
+        />
+      </div>
+      <div style="flex: 1"></div>
+      <div class="filter-area">
+        <label class="small muted">按 tag 过滤:</label>
+        <select id="tag-filter" class="input">
+          <option value="">(全部)</option>
+        </select>
+      </div>
+    </header>
+
+    <main>
+      <div id="board" class="board" aria-live="polite"></div>
+    </main>
+
+    <footer>
+      示例包含：建列、拖拽、完成列自动勾选、截止日期提醒（前端模拟向后端发送），标签、筛选、颜色设置、Enter
+      快捷键交互。
+    </footer>
+
+    <script>
+      /*
+   JSON 数据结构示例（示范字段）:
+   {
+     "columns": [
+       {
+         "id": "col-1",
+         "title": "待办",
+         "cards": [
+           {
+             "id":"card-1",
+             "title":"修复 bug",
+             "content":"调查前端崩溃",
+             "createdAt":"2025-09-24T13:00:00.000Z",
+             "dueDate":"2025-09-25T10:00:00.000Z", // 可选
+             "completed": false,
+             "completedAt": null,
+             "tags": [{"id":"t1","name":"高优先","bg":"#ffecb3","color":"#7a4b00"}],
+             "style": {"bg":"#ffffff","color":"#111111"}
+           }
+         ]
+       }
+     ],
+     "nextIds": {"col":4,"card":12,"tag":5}
+   }
+  */
+
+      // --- 简单工具函数 ---
+      const uuid = (prefix = "id") =>
+        prefix + "-" + Math.random().toString(36).slice(2, 9);
+      const nowISO = () => new Date().toISOString();
+
+      // --- 初始示例数据 ---
+      let store = JSON.parse(localStorage.getItem("kanban_demo") || "null") || {
+        columns: [
+          { id: "col-todo", title: "待办", cards: [] },
+          { id: "col-doing", title: "进行中", cards: [] },
+          { id: "col-done", title: "已完成", cards: [] },
+        ],
+        tags: [],
+        nextIds: { col: 4, card: 1, tag: 1 },
+      };
+
+      // demo: 创建一个带到期提醒的卡
+      if (store.columns[0].cards.length === 0) {
+        const card = makeCard(
+          "示例任务（会在 1 分钟后到期）",
+          "按回车在内容中创建下一个卡片"
+        );
+        // 设置到期时间为现在后 60 秒
+        card.dueDate = new Date(Date.now() + 60 * 1000).toISOString();
+        store.columns[0].cards.push(card);
+        save();
+      }
+
+      // --- UI 和渲染 ---
+      const boardEl = document.getElementById("board");
+      const addColBtn = document.getElementById("add-column");
+      const addCardBtn = document.getElementById("add-card");
+      const exportBtn = document.getElementById("export");
+      const importBtn = document.getElementById("import");
+      const jsonImport = document.getElementById("json-import");
+      const tagFilter = document.getElementById("tag-filter");
+
+      addColBtn.onclick = () => {
+        const title = prompt("新列标题", "新列");
+        if (!title) return;
+        const col = { id: uuid("col"), title, cards: [] };
+        store.columns.push(col);
+        save();
+        render();
+      };
+
+      addCardBtn.onclick = () => {
+        const first = store.columns[0];
+        if (!first) return alert("请先创建一列");
+        const card = makeCard("新卡片");
+        first.cards.unshift(card);
+        save();
+        render();
+        // 自动聚焦新卡片的标题
+        setTimeout(() => focusCardTitle(card.id), 50);
+      };
+
+      exportBtn.onclick = () => {
+        const data = JSON.stringify(store, null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "kanban_export.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+      importBtn.onclick = () => jsonImport.click();
+      jsonImport.onchange = (e) => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            store = JSON.parse(reader.result);
+            save();
+            render();
+            alert("导入完成");
+          } catch (err) {
+            alert("导入失败: " + err);
+          }
+        };
+        reader.readAsText(f);
+      };
+
+      function save() {
+        localStorage.setItem("kanban_demo", JSON.stringify(store));
+      }
+
+      function makeCard(title = "", content = "") {
+        return {
+          id: uuid("card"),
+          title: title,
+          content: content,
+          createdAt: nowISO(),
+          dueDate: null,
+          completed: false,
+          completedAt: null,
+          tags: [],
+          style: { bg: "#ffffff", color: "#111111" },
+          _notified: false, // 内部使用：是否已发送过到期提醒
+        };
+      }
+
+      // 渲染 tag 筛选下拉
+      function renderTagFilter() {
+        const sel = tagFilter;
+        const prev = sel.value;
+        sel.innerHTML = '<option value="">(全部)</option>';
+        store.tags.forEach((t) => {
+          const o = document.createElement("option");
+          o.value = t.id;
+          o.textContent = t.name;
+          sel.appendChild(o);
+        });
+        sel.value = prev;
+      }
+
+      tagFilter.onchange = () => render();
+
+      // 渲染整个面板
+      function render() {
+        renderTagFilter();
+        boardEl.innerHTML = "";
+        for (const col of store.columns) {
+          const colEl = document.createElement("section");
+          colEl.className = "column";
+          colEl.dataset.colId = col.id;
+          const h = document.createElement("h3");
+          h.innerHTML = `<span contenteditable="true" class="col-title">${escapeHtml(
+            col.title
+          )}</span>`;
+          const colControls = document.createElement("div");
+          colControls.className = "column-controls";
+          const addBtn = document.createElement("button");
+          addBtn.textContent = "新卡";
+          addBtn.onclick = () => {
+            const c = makeCard("新卡片");
+            col.cards.unshift(c);
+            save();
+            render();
+            setTimeout(() => focusCardTitle(c.id), 50);
+          };
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "删除列";
+          delBtn.onclick = () => {
+            if (confirm("删除此列？")) {
+              store.columns = store.columns.filter((x) => x.id !== col.id);
+              save();
+              render();
+            }
+          };
+          colControls.appendChild(addBtn);
+          colControls.appendChild(delBtn);
+          h.appendChild(colControls);
+          colEl.appendChild(h);
+
+          const cardsWrap = document.createElement("div");
+          cardsWrap.className = "col-cards";
+
+          // drag events for column (placeholder support)
+          cardsWrap.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const pl = cardsWrap.querySelector(".placeholder");
+            if (!pl) {
+              const ph = document.createElement("div");
+              ph.className = "placeholder";
+              cardsWrap.appendChild(ph);
+            }
+          });
+          cardsWrap.addEventListener("dragleave", (e) => {
+            /* optional cleanup */
+          });
+          cardsWrap.addEventListener("drop", (e) => {
+            e.preventDefault();
+            const cardId = e.dataTransfer.getData("text/plain");
+            if (!cardId) return;
+            moveCardToColumn(cardId, col.id);
+          });
+
+          // show cards
+          for (const card of col.cards) {
+            // filter by tag
+            const filterTag = tagFilter.value;
+            if (filterTag && !card.tags.some((t) => t.id === filterTag))
+              continue;
+
+            const cardEl = renderCard(card, col.id);
+            cardsWrap.appendChild(cardEl);
+          }
+
+          colEl.appendChild(cardsWrap);
+          boardEl.appendChild(colEl);
+
+          // column title edit handler
+          const titleEl = colEl.querySelector(".col-title");
+          titleEl.addEventListener("blur", () => {
+            col.title = titleEl.textContent.trim() || col.title;
+            save();
+            render();
+          });
+          titleEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              titleEl.blur();
+            }
+          });
+        }
+      }
+
+      function renderCard(card, colId) {
+        const el = document.createElement("article");
+        el.className = "card";
+        el.draggable = true;
+        el.dataset.cardId = card.id;
+        el.style.background = card.style.bg;
+        el.style.color = card.style.color;
+
+        el.addEventListener("dragstart", (e) => {
+          e.dataTransfer.setData("text/plain", card.id);
+          el.classList.add("dragging");
+        });
+        el.addEventListener("dragend", () => el.classList.remove("dragging"));
+
+        // header row: checkbox + title + createdAt
+        const row = document.createElement("div");
+        row.className = "row";
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.checked = !!card.completed;
+        chk.addEventListener("change", () => {
+          if (chk.checked) {
+            // 勾选后将卡片移动到已完成列
+            card.completed = true;
+            card.completedAt = nowISO();
+            const doneCol =
+              store.columns.find((c) => c.title === "已完成") ||
+              store.columns[store.columns.length - 1];
+            moveCard(card.id, colId, doneCol.id);
+          } else {
+            card.completed = false;
+            card.completedAt = null;
+            save();
+            render();
+          }
+        });
+        row.appendChild(chk);
+
+        const title = document.createElement("div");
+        title.className = "title";
+        title.contentEditable = true;
+        title.spellcheck = false;
+        title.innerText = card.title || "";
+        title.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault(); // focus content
+            const contentEl = el.querySelector(".card-content");
+            contentEl.focus();
+            placeCaretAtEnd(contentEl);
+          }
+        });
+        title.addEventListener("blur", () => {
+          card.title = title.textContent.trim();
+          save();
+          render();
+        });
+
+        const meta = document.createElement("div");
+        meta.className = "muted small";
+        const created = new Date(card.createdAt).toLocaleString();
+        meta.textContent = created;
+
+        const right = document.createElement("div");
+        right.style.marginLeft = "auto";
+        right.style.display = "flex";
+        right.style.gap = "8px";
+        right.style.alignItems = "center";
+        row.appendChild(title);
+        row.appendChild(right);
+        right.appendChild(meta);
+
+        el.appendChild(row);
+
+        // content
+        const content = document.createElement("div");
+        content.className = "card-content";
+        content.contentEditable = true;
+        content.spellcheck = false;
+        content.style.marginTop = "6px";
+        content.innerText = card.content || "";
+        content.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault(); // create new card in same column
+            const col = store.columns.find((c) =>
+              c.cards.some((x) => x.id === card.id)
+            );
+            const index = col.cards.findIndex((x) => x.id === card.id);
+            const newCard = makeCard("新卡片");
+            col.cards.splice(index + 1, 0, newCard);
+            save();
+            render();
+            setTimeout(() => focusCardTitle(newCard.id), 50);
+          }
+        });
+        content.addEventListener("blur", () => {
+          card.content = content.textContent;
+          save();
+          render();
+        });
+        el.appendChild(content);
+
+        // deadline and tags area
+        const settings = document.createElement("div");
+        settings.className = "card-settings";
+        const dueLabel = document.createElement("label");
+        dueLabel.className = "small muted";
+        dueLabel.innerText = "截止:";
+        const dueInput = document.createElement("input");
+        dueInput.type = "datetime-local";
+        if (card.dueDate) dueInput.value = toLocalInputValue(card.dueDate);
+        dueInput.addEventListener("change", () => {
+          card.dueDate = fromLocalInputValue(dueInput.value);
+          card._notified = false;
+          save();
+          render();
+        });
+        settings.appendChild(dueLabel);
+        settings.appendChild(dueInput);
+
+        // tag list and tag editor
+        const tagWrap = document.createElement("div");
+        tagWrap.className = "tags";
+        for (const t of card.tags) {
+          const tp = document.createElement("span");
+          tp.className = "tag-pill";
+          tp.style.background = t.bg;
+          tp.style.color = t.color;
+          tp.textContent = t.name;
+          tp.title = "单击移除标签";
+          tp.addEventListener("click", () => {
+            if (confirm("从卡片移除标签 " + t.name + "?")) {
+              card.tags = card.tags.filter((x) => x.id !== t.id);
+              save();
+              render();
+            }
+          });
+          tagWrap.appendChild(tp);
+        }
+
+        const tagEdit = document.createElement("div");
+        tagEdit.className = "tag-editor";
+        const addTagBtn = document.createElement("button");
+        addTagBtn.textContent = "添加 Tag";
+        addTagBtn.addEventListener("click", () => {
+          const name = prompt("标签名");
+          if (!name) return;
+          const bg = prompt("标签背景色 (如 #ffeb3b)", "") || "#ededed";
+          const color = prompt("标签字体色 (如 #111111)", "") || "#111";
+          const t = { id: uuid("tag"), name, bg, color };
+          // 存为全局 tag
+          store.tags.push(t);
+          card.tags.push(t);
+          save();
+          render();
+        });
+        tagEdit.appendChild(addTagBtn);
+
+        // color pickers for card style
+        const bgPicker = document.createElement("input");
+        bgPicker.type = "color";
+        bgPicker.title = "卡片背景色";
+        bgPicker.value = rgbToHex(card.style.bg);
+        bgPicker.addEventListener("input", () => {
+          card.style.bg = bgPicker.value;
+          save();
+          render();
+        });
+        const colorPicker = document.createElement("input");
+        colorPicker.type = "color";
+        colorPicker.title = "卡片字体色";
+        colorPicker.value = rgbToHex(card.style.color);
+        colorPicker.addEventListener("input", () => {
+          card.style.color = colorPicker.value;
+          save();
+          render();
+        });
+
+        settings.appendChild(tagWrap);
+        settings.appendChild(tagEdit);
+        settings.appendChild(bgPicker);
+        settings.appendChild(colorPicker);
+
+        // quick tag assign dropdown
+        if (store.tags.length > 0) {
+          const quick = document.createElement("select");
+          const blank = document.createElement("option");
+          blank.textContent = "快速加 tag";
+          blank.value = "";
+          quick.appendChild(blank);
+          for (const t of store.tags) {
+            const o = document.createElement("option");
+            o.value = t.id;
+            o.textContent = t.name;
+            quick.appendChild(o);
+          }
+          quick.addEventListener("change", () => {
+            const t = store.tags.find((x) => x.id === quick.value);
+            if (!t) return;
+            if (!card.tags.some((x) => x.id === t.id)) card.tags.push(t);
+            quick.value = "";
+            save();
+            render();
+          });
+          settings.appendChild(quick);
+        }
+
+        el.appendChild(settings);
+
+        // delete card
+        const del = document.createElement("button");
+        del.textContent = "删除卡片";
+        del.style.marginTop = "6px";
+        del.addEventListener("click", () => {
+          if (confirm("删除此卡片？")) {
+            const col = store.columns.find((c) =>
+              c.cards.some((x) => x.id === card.id)
+            );
+            col.cards = col.cards.filter((x) => x.id !== card.id);
+            save();
+            render();
+          }
+        });
+        el.appendChild(del);
+
+        return el;
+      }
+
+      // helpers: move card by id
+      function moveCardToColumn(cardId, toColId) {
+        const from = store.columns.find((c) =>
+          c.cards.some((x) => x.id === cardId)
+        );
+        if (!from) return;
+        const card = from.cards.find((x) => x.id === cardId);
+        from.cards = from.cards.filter((x) => x.id !== cardId);
+        const to = store.columns.find((c) => c.id === toColId);
+        to.cards.unshift(card);
+        // 如果移动到 '已完成' 列，自动勾选
+        if (to.title === "已完成") {
+          card.completed = true;
+          card.completedAt = nowISO();
+        }
+        save();
+        render();
+      }
+
+      function moveCard(cardId, fromColId, toColId) {
+        const from = store.columns.find((c) => c.id === fromColId);
+        const to = store.columns.find((c) => c.id === toColId);
+        if (!from || !to) return;
+        const card = from.cards.find((x) => x.id === cardId);
+        from.cards = from.cards.filter((x) => x.id !== cardId);
+        to.cards.unshift(card);
+        save();
+        render();
+      }
+
+      // focus card title helper
+      function focusCardTitle(cardId) {
+        const el = boardEl.querySelector(`[data-card-id='${cardId}']`);
+        if (!el) return;
+        const title = el.querySelector(".title");
+        if (title) {
+          title.focus();
+          placeCaretAtEnd(title);
+        }
+      }
+
+      // caret helper
+      function placeCaretAtEnd(el) {
+        if (document.createRange) {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          range.collapse(false);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
+
+      // deadline check loop (模拟向后端发送提醒)
+      setInterval(() => {
+        const now = Date.now();
+        for (const col of store.columns) {
+          for (const card of col.cards) {
+            if (card.dueDate && !card._notified && !card.completed) {
+              const due = new Date(card.dueDate).getTime();
+              if (due <= now) {
+                // 模拟发送提醒到后端
+                mockSendDeadlineReminder(card);
+                card._notified = true;
+                save();
+                render();
+              }
+            }
+          }
+        }
+      }, 5000);
+
+      function mockSendDeadlineReminder(card) {
+        // 这里我们用 console.log + alert 模拟：真实环境下可以 fetch('/api/notify', {...})
+        console.log("模拟发送到期提醒：", card.id, card.title);
+        // 用温和的视觉提醒
+        const box = document.createElement("div");
+        box.style.position = "fixed";
+        box.style.right = "16px";
+        box.style.bottom = "16px";
+        box.style.zIndex = 9999;
+        box.style.padding = "12px";
+        box.style.background = "#fff";
+        box.style.border = "1px solid #dbe3ef";
+        box.style.borderRadius = "8px";
+        box.textContent = "到期提醒：" + card.title;
+        document.body.appendChild(box);
+        setTimeout(() => box.remove(), 8 * 1000);
+      }
+
+      // small helpers to convert between ISO and input[type=datetime-local]
+      function toLocalInputValue(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        const pad = (n) => String(n).padStart(2, "0");
+        const YYYY = d.getFullYear();
+        const MM = pad(d.getMonth() + 1);
+        const DD = pad(d.getDate());
+        const hh = pad(d.getHours());
+        const mm = pad(d.getMinutes());
+        return `${YYYY}-${MM}-${DD}T${hh}:${mm}`;
+      }
+      function fromLocalInputValue(val) {
+        if (!val) return null;
+        const d = new Date(val);
+        return d.toISOString();
+      }
+
+      // helper to convert named/css color to hex (simple)
+      function rgbToHex(v) {
+        try {
+          if (!v) return "#ffffff";
+          if (v.startsWith("#")) return v; // not thorough but ok for demo
+          const ctx = document.createElement("canvas").getContext("2d");
+          ctx.fillStyle = v;
+          return ctx.fillStyle;
+        } catch (e) {
+          return "#ffffff";
+        }
+      }
+
+      // escape
+      function escapeHtml(s) {
+        return (s || "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
+
+      // move initial render
+      render();
+
+      // export for debug
+      window._KANBAN = { store, render, save };
+    </script>
+  </body>
+</html>

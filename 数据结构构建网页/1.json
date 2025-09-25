@@ -1,0 +1,41 @@
+{
+  "type": "p",
+  "id": "unique-id-123",
+  "text": "这是文本内容",
+  "isToggle": false,
+  "children": [
+    {
+      "type": "h",
+      "id": "child-id-1",
+      "text": "标题文本"
+      },
+    {
+      "type": "code",
+      "id": "child-id-2",
+      "text": "console.log('Hello World');"
+      }
+    ],
+  "isDone": false,
+  "tag": ["工作", "学习"],
+  "marker": ["✅", "⭐"],
+  "attribute": {
+    "customKey": "customValue"
+    },
+  "link": "https://example.com",
+  "data": "2025-09-24T00:00:00Z",
+  "deadline": "2025-10-01T23:59:59Z",
+  "x": 100,
+  "y": 200,
+  "broad": {
+    "style": "solid",
+    "color": "#000000"
+    },
+  "background": "#FFFFFF",
+  "font": {
+    "type": "Arial",
+    "fontsize": 14,
+    "color": "#333333"
+    },
+  "note": "这是备注",
+  "script": "alert('执行脚本');"
+  }

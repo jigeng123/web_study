@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kanban 看板系统</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        border-radius: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+      }
+
+      .header h1 {
+        color: #333;
+        font-size: 2.5em;
+        font-weight: 300;
+      }
+
+      .header-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(45deg, #4caf50, #45a049);
+        color: white;
+      }
+
+      .btn-secondary {
+        background: linear-gradient(45deg, #2196f3, #1976d2);
+        color: white;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .filter-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .filter-input {
+        padding: 8px 15px;
+        border: 2px solid #ddd;
+        border-radius: 20px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.3s ease;
+      }
+
+      .filter-input:focus {
+        border-color: #667eea;
+      }
+
+      .tag-filter {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .filter-tag {
+        padding: 6px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+      }
+
+      .filter-tag.active {
+        border-color: #333;
+        transform: scale(1.05);
+      }
+
+      .board-container {
+        display: flex;
+        gap: 20px;
+        overflow-x: auto;
+        padding-bottom: 20px;
+      }
+
+      .column {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 15px;
+        min-width: 300px;
+        max-width: 350px;
+        flex-shrink: 0;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        min-height: 500px;
+        position: relative;
+      }
+
+      .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .column-title {
+        font-size: 1.4em;
+        font-weight: 600;
+        color: #333;
+        background: none;
+        border: none;
+        outline: none;
+        width: 100%;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+      }
+
+      .column-title:hover {
+        background-color: #f8f9fa;
+      }
+
+      .column-count {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 15px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+
+      .column-menu {
+        position: relative;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: background-color 0.3s ease;
+      }
+
+      .column-menu:hover {
+        background-color: #f0f0f0;
+      }
+
+      .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        min-width: 150px;
+        z-index: 1000;
+        display: none;
+      }
+
+      .dropdown-menu.show {
+        display: block;
+      }
+
+      .dropdown-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        border-bottom: 1px solid #f0f0f0;
+      }
+
+      .dropdown-item:last-child {
+        border-bottom: none;
+      }
+
+      .dropdown-item:hover {
+        background-color: #f8f9fa;
+      }
+
+      .dropdown-item.danger:hover {
+        background-color: #ffe6e6;
+        color: #dc3545;
+      }
+
+      .cards-container {
+        min-height: 300px;
+        position: relative;
+      }
+
+      .card {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        cursor: move;
+        transition: all 0.3s ease;
+        border-left: 4px solid #667eea;
+        position: relative;
+      }
+
+      .card:hover {
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+      }
+
+      .card.dragging {
+        opacity: 0.5;
+        transform: rotate(5deg);
+      }
+
+      .card.drag-over {
+        border: 2px dashed #667eea;
+        background-color: #f8f9ff;
+      }
+
+      .card-checkbox {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        transform: scale(1.2);
+        cursor: pointer;
+      }
+
+      .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        background: none;
+        border: none;
+        outline: none;
+        width: calc(100% - 30px);
+        resize: none;
+        overflow: hidden;
+        min-height: 24px;
+        line-height: 1.5;
+      }
+
+      .card-title:focus {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 4px;
+      }
+
+      .card-content {
+        font-size: 14px;
+        color: #666;
+        background: none;
+        border: none;
+        outline: none;
+        width: 100%;
+        resize: none;
+        overflow: hidden;
+        min-height: 20px;
+        line-height: 1.4;
+        margin-bottom: 12px;
+      }
+
+      .card-content:focus {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 4px;
+      }
+
+      .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .tag {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .tag:hover::after {
+        content: "×";
+        position: absolute;
+        right: -2px;
+        top: -2px;
+        background: #ff4444;
+        color: white;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .card-meta {
+        font-size: 12px;
+        color: #999;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #f0f0f0;
+        padding-top: 8px;
+      }
+
+      .card-deadline {
+        font-weight: 500;
+      }
+
+      .card-deadline.overdue {
+        color: #dc3545;
+        font-weight: 600;
+      }
+
+      .card-deadline.due-soon {
+        color: #fd7e14;
+        font-weight: 600;
+      }
+
+      .card-controls {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .card-control-btn {
+        padding: 4px 8px;
+        border: none;
+        border-radius: 6px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .btn-tag {
+        background: #e3f2fd;
+        color: #1976d2;
+      }
+
+      .btn-color {
+        background: #f3e5f5;
+        color: #7b1fa2;
+      }
+
+      .btn-deadline {
+        background: #fff3e0;
+        color: #f57c00;
+      }
+
+      .card-control-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .add-card-btn {
+        width: 100%;
+        padding: 12px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        background: none;
+        color: #666;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 10px;
+      }
+
+      .add-card-btn:hover {
+        border-color: #667eea;
+        color: #667eea;
+        background-color: #f8f9ff;
+      }
+
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .modal-title {
+        font-size: 1.5em;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+        transition: color 0.3s ease;
+      }
+
+      .close-btn:hover {
+        color: #333;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+      }
+
+      .form-input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.3s ease;
+      }
+
+      .form-input:focus {
+        border-color: #667eea;
+      }
+
+      .color-picker-group {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+
+      .color-picker {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .color-input {
+        width: 50px;
+        height: 50px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .tag-input-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        min-height: 50px;
+        align-items: flex-start;
+        cursor: text;
+      }
+
+      .tag-input-container:focus-within {
+        border-color: #667eea;
+      }
+
+      .tag-input {
+        border: none;
+        outline: none;
+        flex: 1;
+        min-width: 100px;
+        font-size: 14px;
+      }
+
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 3000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .drop-zone {
+        min-height: 50px;
+        border: 2px dashed transparent;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .drop-zone.drag-over {
+        border-color: #667eea;
+        background-color: #f8f9ff;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .fade-in {
+        animation: fadeIn 0.5s ease-out;
+      }
+
+      @media (max-width: 768px) {
+        .board-container {
+          flex-direction: column;
+          gap: 15px;
+        }
+
+        .column {
+          min-width: 100%;
+        }
+
+        .header {
+          flex-direction: column;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Kanban 看板</h1>
+      <div class="header-controls">
+        <div class="filter-container">
+          <input
+            type="text"
+            class="filter-input"
+            placeholder="搜索卡片..."
+            id="searchInput"
+          />
+          <button class="btn btn-secondary" onclick="clearFilters()">
+            清除筛选
+          </button>
+        </div>
+        <button class="btn btn-primary" onclick="addColumn()">新建列</button>
+        <button class="btn btn-secondary" onclick="exportData()">
+          导出数据
+        </button>
+      </div>
+    </div>
+
+    <div class="tag-filter" id="tagFilter"></div>
+
+    <div class="board-container" id="boardContainer"></div>
+
+    <!-- 卡片编辑模态框 -->
+    <div class="modal" id="cardModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">编辑卡片</h2>
+          <button class="close-btn" onclick="closeModal('cardModal')">
+            &times;
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">背景颜色 & 字体颜色</label>
+          <div class="color-picker-group">
+            <div class="color-picker">
+              <label>背景</label>
+              <input
+                type="color"
+                id="cardBgColor"
+                class="color-input"
+                value="#ffffff"
+              />
+            </div>
+            <div class="color-picker">
+              <label>字体</label>
+              <input
+                type="color"
+                id="cardTextColor"
+                class="color-input"
+                value="#333333"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">截止日期</label>
+          <input type="datetime-local" id="cardDeadline" class="form-input" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">标签 (按Enter添加)</label>
+          <div class="tag-input-container" id="tagInputContainer">
+            <input
+              type="text"
+              class="tag-input"
+              id="tagInput"
+              placeholder="添加标签..."
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">标签样式</label>
+          <div class="color-picker-group">
+            <div class="color-picker">
+              <label>背景</label>
+              <input
+                type="color"
+                id="tagBgColor"
+                class="color-input"
+                value="#e3f2fd"
+              />
+            </div>
+            <div class="color-picker">
+              <label>字体</label>
+              <input
+                type="color"
+                id="tagTextColor"
+                class="color-input"
+                value="#1976d2"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <button class="btn btn-primary" onclick="saveCardChanges()">
+            保存更改
+          </button>
+          <button class="btn btn-secondary" onclick="closeModal('cardModal')">
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建列模态框 -->
+    <div class="modal" id="columnModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">新建列</h2>
+          <button class="close-btn" onclick="closeModal('columnModal')">
+            &times;
+          </button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">列标题</label>
+          <input
+            type="text"
+            id="columnTitleInput"
+            class="form-input"
+            placeholder="输入列标题..."
+          />
+        </div>
+
+        <div class="form-group">
+          <button class="btn btn-primary" onclick="createColumn()">创建</button>
+          <button class="btn btn-secondary" onclick="closeModal('columnModal')">
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+      // 数据结构
+      let kanbanData = {
+        columns: [
+          {
+            id: "todo",
+            title: "待办事项",
+            cards: [
+              {
+                id: "card-1",
+                title: "完成项目文档",
+                content: "编写项目的技术文档和使用说明",
+                tags: [
+                  { text: "文档", bgColor: "#e3f2fd", textColor: "#1976d2" },
+                  { text: "重要", bgColor: "#ffebee", textColor: "#d32f2f" },
+                ],
+                deadline: "2025-09-30T18:00",
+                createdAt: "2025-09-24T10:00:00Z",
+                completed: false,
+                bgColor: "#ffffff",
+                textColor: "#333333",
+              },
+            ],
+          },
+          {
+            id: "doing",
+            title: "进行中",
+            cards: [
+              {
+                id: "card-2",
+                title: "开发看板功能",
+                content: "实现拖拽、编辑、筛选等核心功能",
+                tags: [
+                  { text: "开发", bgColor: "#e8f5e8", textColor: "#2e7d32" },
+                  { text: "前端", bgColor: "#fff3e0", textColor: "#f57c00" },
+                ],
+                deadline: "2025-09-28T20:00",
+                createdAt: "2025-09-24T09:30:00Z",
+                completed: false,
+                bgColor: "#ffffff",
+                textColor: "#333333",
+              },
+            ],
+          },
+          {
+            id: "done",
+            title: "已完成",
+            cards: [],
+          },
+        ],
+        nextId: 3,
+      };
+
+      let currentCard = null;
+      let draggedCard = null;
+      let filterTags = new Set();
+
+      // 初始化
+      document.addEventListener("DOMContentLoaded", function () {
+        renderBoard();
+        setupEventListeners();
+        checkDeadlines();
+
+        // 定时检查截止日期
+        setInterval(checkDeadlines, 60000); // 每分钟检查一次
+      });
+
+      // 设置事件监听器
+      function setupEventListeners() {
+        // 搜索功能
+        document
+          .getElementById("searchInput")
+          .addEventListener("input", filterCards);
+
+        // 标签输入
+        document
+          .getElementById("tagInput")
+          .addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+              addTag();
+            }
+          });
+
+        // 点击标签容器聚焦输入框
+        document
+          .getElementById("tagInputContainer")
+          .addEventListener("click", function () {
+            document.getElementById("tagInput").focus();
+          });
+      }
+
+      // 渲染看板
+      function renderBoard() {
+        const container = document.getElementById("boardContainer");
+        container.innerHTML = "";
+
+        kanbanData.columns.forEach((column) => {
+          const columnElement = createColumnElement(column);
+          container.appendChild(columnElement);
+        });
+
+        updateTagFilter();
+      }
+
+      // 创建列元素
+      function createColumnElement(column) {
+        const columnDiv = document.createElement("div");
+        columnDiv.className = "column fade-in";
+        columnDiv.setAttribute("data-column-id", column.id);
+
+        const filteredCards = filterCardsBySearch(column.cards);
+
+        columnDiv.innerHTML = `
+                <div class="column-header">
+                    <input type="text" class="column-title" value="${
+                      column.title
+                    }" 
+                           onblur="updateColumnTitle('${
+                             column.id
+                           }', this.value)"
+                           onkeypress="if(event.key==='Enter') this.blur()">
+                    <span class="column-count">${filteredCards.length}</span>
+                    <div class="column-menu" onclick="toggleColumnMenu('${
+                      column.id
+                    }')">⋮
+                        <div class="dropdown-menu" id="menu-${column.id}">
+                            <div class="dropdown-item" onclick="deleteColumn('${
+                              column.id
+                            }')">删除列</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cards-container drop-zone" 
+                     ondrop="dropCard(event, '${column.id}')" 
+                     ondragover="allowDrop(event)">
+                    ${filteredCards
+                      .map((card) => createCardHTML(card))
+                      .join("")}
+                </div>
+                <button class="add-card-btn" onclick="addCard('${
+                  column.id
+                }')">+ 添加卡片</button>
+            `;
+
+        return columnDiv;
+      }
+
+      // 创建卡片HTML
+      function createCardHTML(card) {
+        const isOverdue = new Date(card.deadline) < new Date();
+        const isDueSoon =
+          new Date(card.deadline) - new Date() < 24 * 60 * 60 * 1000;
+        const deadlineClass = isOverdue
+          ? "overdue"
+          : isDueSoon
+          ? "due-soon"
+          : "";
+
+        return `
+                <div class="card" draggable="true" data-card-id="${card.id}"
+                     style="background-color: ${card.bgColor}; color: ${
+          card.textColor
+        }"
+                     ondragstart="dragCard(event, '${card.id}')"
+                     ondragend="dragEnd(event)">
+                    <input type="checkbox" class="card-checkbox" 
+                           ${card.completed ? "checked" : ""}
+                           onchange="toggleCardComplete('${
+                             card.id
+                           }', this.checked)">
+                    
+                    <textarea class="card-title" 
+                              placeholder="输入标题..."
+                              onkeypress="handleTitleKeypress(event, '${
+                                card.id
+                              }')"
+                              onblur="updateCard('${
+                                card.id
+                              }', 'title', this.value)"
+                              style="color: ${card.textColor}">${
+          card.title
+        }</textarea>
+                    
+                    <textarea class="card-content" 
+                              placeholder="输入内容..."
+                              onkeypress="handleContentKeypress(event, '${
+                                card.id
+                              }')"
+                              onblur="updateCard('${
+                                card.id
+                              }', 'content', this.value)"
+                              style="color: ${card.textColor}">${
+          card.content
+        }</textarea>
+                    
+                    <div class="card-tags">
+                        ${card.tags
+                          .map(
+                            (tag) => `
+                            <span class="tag" 
+                                  style="background-color: ${tag.bgColor}; color: ${tag.textColor}"
+                                  onclick="toggleTagFilter('${tag.text}')"
+                                  onmouseenter="showTagDelete(this)"
+                                  onmouseleave="hideTagDelete(this)"
+                                  data-tag="${tag.text}">${tag.text}</span>
+                        `
+                          )
+                          .join("")}
+                    </div>
+                    
+                    <div class="card-meta">
+                        <span>创建: ${new Date(
+                          card.createdAt
+                        ).toLocaleDateString()}</span>
+                        <span class="card-deadline ${deadlineClass}">
+                            截止: ${new Date(
+                              card.deadline
+                            ).toLocaleDateString()}
+                        </span>
+                    </div>
+                    
+                    <div class="card-controls">
+                        <button class="card-control-btn btn-tag" onclick="openCardModal('${
+                          card.id
+                        }', 'tag')">标签</button>
+                        <button class="card-control-btn btn-color" onclick="openCardModal('${
+                          card.id
+                        }', 'color')">颜色</button>
+                        <button class="card-control-btn btn-deadline" onclick="openCardModal('${
+                          card.id
+                        }', 'deadline')">截止日期</button>
+                    </div>
+                </div>
+            `;
+      }
+
+      // 标题输入处理
+      function handleTitleKeypress(event, cardId) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          updateCard(cardId, "title", event.target.value);
+          // 聚焦到内容输入框
+          const card = event.target.closest(".card");
+          const contentTextarea = card.querySelector(".card-content");
+          contentTextarea.focus();
+        }
+      }
+
+      // 内容输入处理
+      function handleContentKeypress(event, cardId) {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          updateCard(cardId, "content", event.target.value);
+          // 创建新卡片
+          const columnId = event.target
+            .closest(".column")
+            .getAttribute("data-column-id");
+          addCard(columnId);
+        }
+      }
+
+      // 拖拽功能
+      function dragCard(event, cardId) {
+        draggedCard = cardId;
+        event.target.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/html", event.target.outerHTML);
+      }
+
+      function dragEnd(event) {
+        event.target.classList.remove("dragging");
+      }
+
+      function allowDrop(event) {
+        event.preventDefault();
+        event.target.closest(".drop-zone").classList.add("drag-over");
+      }
+
+      function dropCard(event, columnId) {
+        event.preventDefault();
+        event.target.closest(".drop-zone").classList.remove("drag-over");
+
+        if (draggedCard) {
+          moveCard(draggedCard, columnId);
+          draggedCard = null;
+        }
+      }
+
+      // 移动卡片
+      function moveCard(cardId, targetColumnId) {
+        let card = null;
+        let sourceColumnId = null;
+
+        // 找到卡片并从原列中移除
+        kanbanData.columns.forEach((column) => {
+          const cardIndex = column.cards.findIndex((c) => c.id === cardId);
+          if (cardIndex !== -1) {
+            card = column.cards.splice(cardIndex, 1)[0];
+            sourceColumnId = column.id;
+          }
+        });
+
+        if (card) {
+          // 添加到目标列
+          const targetColumn = kanbanData.columns.find(
+            (c) => c.id === targetColumnId
+          );
+          if (targetColumn) {
+            targetColumn.cards.push(card);
+
+            // 如果移动到完成列，自动标记为完成
+            if (targetColumnId === "done") {
+              card.completed = true;
+              showNotification("卡片已移动到完成列！");
+              simulateBackendSubmission(card);
+            } else {
+              card.completed = false;
+            }
+
+            renderBoard();
+          }
+        }
+      }
+
+      // 切换卡片完成状态
+      function toggleCardComplete(cardId, isCompleted) {
+        const card = findCard(cardId);
+        if (card) {
+          card.completed = isCompleted;
+
+          if (isCompleted) {
+            // 移动到完成列
+            moveCard(cardId, "done");
+            showNotification("任务已完成！");
+            simulateBackendSubmission(card);
+          } else {
+            // 如果在完成列中取消勾选，移动到待办列
+            moveCard(cardId, "todo");
+          }
+        }
+      }
+
+      // 模拟后端提交
+      function simulateBackendSubmission(card) {
+        console.log("模拟提交到后端:", {
+          cardId: card.id,
+          title: card.title,
+          completed: card.completed,
+          completedAt: new Date().toISOString(),
+        });
+
+        // 模拟API调用
+        setTimeout(() => {
+          showNotification("数据已同步到服务器");
+        }, 1000);
+      }
+
+      // 查找卡片
+      function findCard(cardId) {
+        for (let column of kanbanData.columns) {
+          const card = column.cards.find((c) => c.id === cardId);
+          if (card) return card;
+        }
+        return null;
+      }
+
+      // 添加新卡片
+      function addCard(columnId) {
+        const newCard = {
+          id: `card-${kanbanData.nextId++}`,
+          title: "",
+          content: "",
+          tags: [],
+          deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .slice(0, 16),
+          createdAt: new Date().toISOString(),
+          completed: false,
+          bgColor: "#ffffff",
+          textColor: "#333333",
+        };
+
+        const column = kanbanData.columns.find((c) => c.id === columnId);
+        if (column) {
+          column.cards.push(newCard);
+          renderBoard();
+
+          // 聚焦新卡片的标题
+          setTimeout(() => {
+            const cardElement = document.querySelector(
+              `[data-card-id="${newCard.id}"]`
+            );
+            if (cardElement) {
+              const titleInput = cardElement.querySelector(".card-title");
+              titleInput.focus();
+              titleInput.select();
+            }
+          }, 100);
+        }
+      }
+
+      // 更新卡片
+      function updateCard(cardId, field, value) {
+        const card = findCard(cardId);
+        if (card && value.trim()) {
+          card[field] = value.trim();
+
+          // 自动调整textarea高度
+          setTimeout(() => {
+            const cardElement = document.querySelector(
+              `[data-card-id="${cardId}"]`
+            );
+            if (cardElement) {
+              const textareas = cardElement.querySelectorAll("textarea");
+              textareas.forEach((textarea) => {
+                textarea.style.height = "auto";
+                textarea.style.height = textarea.scrollHeight + "px";
+              });
+            }
+          }, 0);
+        }
+      }
+
+      // 添加新列
+      function addColumn() {
+        document.getElementById("columnModal").classList.add("show");
+      }
+
+      function createColumn() {
+        const titleInput = document.getElementById("columnTitleInput");
+        const title = titleInput.value.trim();
+
+        if (!title) {
+          showNotification("请输入列标题");
+          return;
+        }
+
+        const newColumn = {
+          id: `column-${Date.now()}`,
+          title: title,
+          cards: [],
+        };
+
+        kanbanData.columns.push(newColumn);
+        titleInput.value = "";
+        closeModal("columnModal");
+        renderBoard();
+        showNotification("新列已创建");
+      }
+
+      // 删除列
+      function deleteColumn(columnId) {
+        const columnIndex = kanbanData.columns.findIndex(
+          (c) => c.id === columnId
+        );
+        if (columnIndex !== -1) {
+          if (confirm("确定要删除这一列吗？所有卡片将被永久删除。")) {
+            kanbanData.columns.splice(columnIndex, 1);
+            renderBoard();
+            showNotification("列已删除");
+          }
+        }
+      }
+
+      // 更新列标题
+      function updateColumnTitle(columnId, newTitle) {
+        const column = kanbanData.columns.find((c) => c.id === columnId);
+        if (column && newTitle.trim()) {
+          column.title = newTitle.trim();
+        }
+      }
+
+      // 切换列菜单
+      function toggleColumnMenu(columnId) {
+        const menu = document.getElementById(`menu-${columnId}`);
+        const isVisible = menu.classList.contains("show");
+
+        // 关闭所有菜单
+        document
+          .querySelectorAll(".dropdown-menu")
+          .forEach((m) => m.classList.remove("show"));
+
+        if (!isVisible) {
+          menu.classList.add("show");
+
+          // 点击其他地方关闭菜单
+          setTimeout(() => {
+            document.addEventListener("click", function closeMenu(e) {
+              if (!e.target.closest(".column-menu")) {
+                menu.classList.remove("show");
+                document.removeEventListener("click", closeMenu);
+              }
+            });
+          }, 0);
+        }
+      }
+
+      // 打开卡片编辑模态框
+      function openCardModal(cardId, tab = "color") {
+        currentCard = findCard(cardId);
+        if (!currentCard) return;
+
+        // 设置表单值
+        document.getElementById("cardBgColor").value = currentCard.bgColor;
+        document.getElementById("cardTextColor").value = currentCard.textColor;
+        document.getElementById("cardDeadline").value = currentCard.deadline;
+
+        // 渲染标签
+        renderCardTags();
+
+        document.getElementById("cardModal").classList.add("show");
+      }
+
+      // 渲染卡片标签编辑
+      function renderCardTags() {
+        const container = document.getElementById("tagInputContainer");
+        const input = container.querySelector(".tag-input");
+
+        // 清空现有标签
+        container.querySelectorAll(".tag").forEach((tag) => tag.remove());
+
+        // 添加现有标签
+        currentCard.tags.forEach((tag, index) => {
+          const tagElement = document.createElement("span");
+          tagElement.className = "tag";
+          tagElement.style.backgroundColor = tag.bgColor;
+          tagElement.style.color = tag.textColor;
+          tagElement.textContent = tag.text;
+          tagElement.onclick = () => removeTag(index);
+          container.insertBefore(tagElement, input);
+        });
+      }
+
+      // 添加标签
+      function addTag() {
+        const input = document.getElementById("tagInput");
+        const text = input.value.trim();
+
+        if (!text) return;
+
+        // 检查是否已存在
+        if (currentCard.tags.some((tag) => tag.text === text)) {
+          showNotification("标签已存在");
+          return;
+        }
+
+        const bgColor = document.getElementById("tagBgColor").value;
+        const textColor = document.getElementById("tagTextColor").value;
+
+        currentCard.tags.push({
+          text: text,
+          bgColor: bgColor,
+          textColor: textColor,
+        });
+
+        input.value = "";
+        renderCardTags();
+      }
+
+      // 删除标签
+      function removeTag(index) {
+        currentCard.tags.splice(index, 1);
+        renderCardTags();
+      }
+
+      // 保存卡片更改
+      function saveCardChanges() {
+        if (!currentCard) return;
+
+        currentCard.bgColor = document.getElementById("cardBgColor").value;
+        currentCard.textColor = document.getElementById("cardTextColor").value;
+        currentCard.deadline = document.getElementById("cardDeadline").value;
+
+        closeModal("cardModal");
+        renderBoard();
+        showNotification("卡片已更新");
+      }
+
+      // 标签筛选
+      function toggleTagFilter(tagText) {
+        if (filterTags.has(tagText)) {
+          filterTags.delete(tagText);
+        } else {
+          filterTags.add(tagText);
+        }
+        renderBoard();
+      }
+
+      function updateTagFilter() {
+        const container = document.getElementById("tagFilter");
+        const allTags = new Set();
+
+        // 收集所有标签
+        kanbanData.columns.forEach((column) => {
+          column.cards.forEach((card) => {
+            card.tags.forEach((tag) => allTags.add(tag.text));
+          });
+        });
+
+        container.innerHTML = "";
+
+        if (allTags.size > 0) {
+          const filterTitle = document.createElement("span");
+          filterTitle.textContent = "标签筛选: ";
+          filterTitle.style.fontWeight = "bold";
+          filterTitle.style.marginRight = "15px";
+          container.appendChild(filterTitle);
+
+          allTags.forEach((tagText) => {
+            const tagElement = document.createElement("span");
+            tagElement.className = "filter-tag";
+            tagElement.textContent = tagText;
+            tagElement.onclick = () => toggleTagFilter(tagText);
+
+            if (filterTags.has(tagText)) {
+              tagElement.classList.add("active");
+            }
+
+            // 找到第一个匹配的标签样式
+            for (let column of kanbanData.columns) {
+              for (let card of column.cards) {
+                const tag = card.tags.find((t) => t.text === tagText);
+                if (tag) {
+                  tagElement.style.backgroundColor = tag.bgColor;
+                  tagElement.style.color = tag.textColor;
+                  break;
+                }
+              }
+              if (tagElement.style.backgroundColor) break;
+            }
+
+            container.appendChild(tagElement);
+          });
+        }
+      }
+
+      // 搜索和筛选
+      function filterCards() {
+        renderBoard();
+      }
+
+      function filterCardsBySearch(cards) {
+        const searchTerm = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+
+        return cards.filter((card) => {
+          // 文本搜索
+          const matchesSearch =
+            !searchTerm ||
+            card.title.toLowerCase().includes(searchTerm) ||
+            card.content.toLowerCase().includes(searchTerm);
+
+          // 标签筛选
+          const matchesTags =
+            filterTags.size === 0 ||
+            card.tags.some((tag) => filterTags.has(tag.text));
+
+          return matchesSearch && matchesTags;
+        });
+      }
+
+      function clearFilters() {
+        document.getElementById("searchInput").value = "";
+        filterTags.clear();
+        renderBoard();
+      }
+
+      // 检查截止日期
+      function checkDeadlines() {
+        const now = new Date();
+        let overdueCount = 0;
+        let dueSoonCount = 0;
+
+        kanbanData.columns.forEach((column) => {
+          column.cards.forEach((card) => {
+            if (!card.completed && card.deadline) {
+              const deadline = new Date(card.deadline);
+              const timeDiff = deadline - now;
+              const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+              if (timeDiff < 0) {
+                overdueCount++;
+              } else if (hoursDiff < 24) {
+                dueSoonCount++;
+              }
+            }
+          });
+        });
+
+        if (overdueCount > 0) {
+          showNotification(`有 ${overdueCount} 个任务已逾期！`, "error");
+          simulateBackendNotification("deadline_overdue", overdueCount);
+        } else if (dueSoonCount > 0) {
+          showNotification(`有 ${dueSoonCount} 个任务即将到期！`, "warning");
+          simulateBackendNotification("deadline_due_soon", dueSoonCount);
+        }
+      }
+
+      // 模拟后端通知
+      function simulateBackendNotification(type, count) {
+        console.log("模拟发送后端通知:", {
+          type: type,
+          count: count,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // 通用功能
+      function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove("show");
+        currentCard = null;
+      }
+
+      function showNotification(message, type = "success") {
+        const notification = document.getElementById("notification");
+        notification.textContent = message;
+        notification.className = `notification show ${type}`;
+
+        setTimeout(() => {
+          notification.classList.remove("show");
+        }, 3000);
+      }
+
+      function exportData() {
+        const dataStr = JSON.stringify(kanbanData, null, 2);
+        const dataUri =
+          "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+        const exportFileDefaultName = `kanban-data-${new Date()
+          .toISOString()
+          .slice(0, 10)}.json`;
+
+        const linkElement = document.createElement("a");
+        linkElement.setAttribute("href", dataUri);
+        linkElement.setAttribute("download", exportFileDefaultName);
+        linkElement.click();
+      }
+
+      // 阻止事件冒泡
+      document.addEventListener("click", function (e) {
+        if (e.target.classList.contains("modal")) {
+          e.target.classList.remove("show");
+        }
+      });
+
+      // 自动调整textarea高度
+      document.addEventListener("input", function (e) {
+        if (e.target.tagName === "TEXTAREA") {
+          e.target.style.height = "auto";
+          e.target.style.height = e.target.scrollHeight + "px";
+        }
+      });
+    </script>
+  </body>
+</html>
