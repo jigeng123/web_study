@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sheet-JS - 支持JavaScript公式</title>
+    <style>
+      /* 样式与上一版相同，保持一致性 */
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        padding: 20px;
+        background-color: #f4f5f7;
+        color: #172b4d;
+      }
+      h1 {
+        text-align: center;
+        color: #091e42;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      p,
+      li {
+        line-height: 1.6;
+      }
+      code {
+        background-color: #eef;
+        padding: 2px 5px;
+        border-radius: 4px;
+      }
+      .warning {
+        background-color: #fffbe6;
+        border-left: 4px solid #ffab00;
+        padding: 10px;
+        margin-top: 20px;
+      }
+
+      table {
+        border-collapse: collapse;
+        margin-top: 20px;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #c4cdd5;
+        padding: 0;
+        position: relative;
+        min-width: 80px;
+      }
+      th,
+      .row-header {
+        background-color: #f4f5f7;
+        font-weight: bold;
+        text-align: center;
+        padding: 8px;
+        color: #42526e;
+      }
+      td input {
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: 2px solid transparent;
+        box-sizing: border-box;
+        padding: 8px;
+        font-size: 14px;
+        text-align: left;
+      }
+      td input:focus {
+        outline-color: #0052cc;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Sheet-JS (JavaScript 公式版)</h1>
+      <p>
+        这个版本允许您使用<strong>原生 JavaScript</strong>
+        编写公式。我们提供了一个便捷的辅助函数
+        <code>v('ID')</code> 来获取单元格的值。
+      </p>
+
+      <h3>如何使用</h3>
+      <ol>
+        <li>在 <strong>A1</strong> 单元格输入数字，例如 <code>100</code>。</li>
+        <li>在 <strong>A2</strong> 单元格输入数字，例如 <code>25</code>。</li>
+        <li>
+          在 <strong>B1</strong> 单元格，您可以尝试以下任意一种JS公式：
+          <ul>
+            <li>
+              <strong>基本运算:</strong>
+              <code>=v('A1') * 0.1</code> (计算A1的10%)
+            </li>
+            <li>
+              <strong>多单元格运算:</strong> <code>=v('A1') + v('A2')</code>
+            </li>
+            <li>
+              <strong>使用JS内置函数:</strong>
+              <code>=Math.sqrt(v('A2'))</code> (计算A2的平方根)
+            </li>
+            <li>
+              <strong>字符串拼接:</strong>
+              <code>='总计: ' + (v('A1') + v('A2'))</code>
+            </li>
+            <li>
+              <strong>完整的原生JS (不推荐，但可行):</strong>
+              <code>=parseFloat(document.getElementById('A1').value) / 2</code>
+            </li>
+          </ul>
+        </li>
+        <li>
+          按下回车或点击其他地方，单元格会立即执行JavaScript代码并显示结果。
+        </li>
+      </ol>
+
+      <table id="sheet">
+        <thead>
+          <tr>
+            <th></th>
+            <th>A</th>
+            <th>B</th>
+            <th>C</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-header">1</td>
+            <td><input type="text" id="A1" /></td>
+            <td><input type="text" id="B1" /></td>
+            <td><input type="text" id="C1" /></td>
+          </tr>
+          <tr>
+            <td class="row-header">2</td>
+            <td><input type="text" id="A2" /></td>
+            <td><input type="text" id="B2" /></td>
+            <td><input type="text" id="C2" /></td>
+          </tr>
+          <tr>
+            <td class="row-header">3</td>
+            <td><input type="text" id="A3" /></td>
+            <td><input type="text" id="B3" /></td>
+            <td><input type="text" id="C3" /></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warning">
+        <strong>安全提示:</strong> 此方法通过
+        <code>new Function()</code> 执行用户输入的代码。虽然比
+        <code>eval()</code>
+        相对安全，但仍存在安全风险。请勿在生产环境中使用不受信任的用户输入，这可能导致跨站脚本（XSS）攻击。此示例仅用于教学和演示目的。
+      </div>
+    </div>
+
+    <script>
+      /**
+       * 辅助函数 v(cellId)
+       * 用于方便地获取单元格的值并转换为数字。
+       * @param {string} cellId - 单元格的ID，例如 'A1'。
+       * @returns {number} - 返回单元格的数值，如果无效则返回 0。
+       */
+      window.v = function (cellId) {
+        const cell = document.getElementById(cellId);
+        if (!cell) {
+          console.warn(`Cell with ID "${cellId}" not found.`);
+          return 0; // 如果找不到单元格，返回0
+        }
+        // 尝试将单元格的值转为浮点数，如果失败（例如值为空或文本），则返回0
+        return parseFloat(cell.value) || 0;
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const sheet = document.getElementById("sheet");
+        const cells = sheet.querySelectorAll('input[type="text"]');
+
+        const recalculateAll = () => {
+          cells.forEach((cell) => {
+            const formula = cell.dataset.formula;
+            if (formula) {
+              try {
+                const result = evaluateFormula(formula);
+                cell.value = result;
+              } catch (error) {
+                console.error(`Error in formula for ${cell.id}:`, error);
+                cell.value = "#ERROR!";
+              }
+            }
+          });
+        };
+
+        /**
+         * 计算包含JavaScript代码的公式字符串
+         * @param {string} formula - 以 '=' 开头的JS公式，例如 '=v("A1")+v("A2")'
+         * @returns {any} - 返回JS代码的执行结果
+         */
+        const evaluateFormula = (formula) => {
+          // 移除开头的 '='
+          const expression = formula.substring(1);
+
+          // 直接将字符串作为JavaScript代码执行
+          // 使用 Function 构造函数比 eval() 更安全
+          // 因为我们的辅助函数 v() 是全局的 (window.v)，所以在这里可以访问到
+          try {
+            return new Function(`return ${expression}`)();
+          } catch (error) {
+            throw new Error(`Invalid JavaScript expression: ${expression}`);
+          }
+        };
+
+        cells.forEach((cell) => {
+          cell.addEventListener("input", (event) => {
+            const inputElement = event.target;
+            const value = inputElement.value;
+
+            if (value.startsWith("=")) {
+              inputElement.dataset.formula = value;
+            } else {
+              delete inputElement.dataset.formula;
+            }
+            recalculateAll();
+          });
+
+          cell.addEventListener("focus", (event) => {
+            const inputElement = event.target;
+            if (inputElement.dataset.formula) {
+              inputElement.value = inputElement.dataset.formula;
+            }
+          });
+
+          cell.addEventListener("blur", (event) => {
+            recalculateAll();
+          });
+        });
+
+        recalculateAll();
+      });
+    </script>
+  </body>
+</html>

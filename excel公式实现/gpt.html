@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>轻量级 Sheet - 支持类似 Excel 的公式</title>
+    <style>
+      :root {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+      }
+      body {
+        padding: 20px;
+        background: #f6f8fa;
+      }
+      .sheet-wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+        padding: 16px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .formula-bar {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+      }
+      .btn {
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        background: #fafafa;
+        cursor: pointer;
+      }
+      table.sheet {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+      }
+      table.sheet th,
+      table.sheet td {
+        border: 1px solid #e6e9ee;
+        padding: 6px;
+        font-size: 13px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      table.sheet th {
+        background: #f3f6fb;
+        text-align: center;
+      }
+      td.cell {
+        height: 30px;
+        padding: 4px;
+      }
+      td.cell[contenteditable="true"]:focus {
+        outline: 2px solid #cfe3ff;
+      }
+      .info {
+        font-size: 12px;
+        color: #666;
+        margin-top: 8px;
+      }
+      .bad {
+        color: #b91c1c;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sheet-wrap">
+      <div class="toolbar">
+        <div style="width: 64px">公式栏</div>
+        <input
+          id="formulaBar"
+          class="formula-bar"
+          placeholder="选中单元格后在此编辑，公式以 = 开头，例如 =A1+B1 或 =SUM(A1:A5)"
+        />
+        <button id="btnSum" class="btn">插入 SUM()</button>
+        <button id="btnClear" class="btn">清空表格</button>
+      </div>
+
+      <div style="overflow: auto; max-height: 60vh">
+        <table id="sheet" class="sheet"></table>
+      </div>
+
+      <div class="info">
+        示例：在 A1 输入 <code>10</code>，在 A2 输入 <code>20</code>，在 A3 输入
+        <code>=A1+A2</code>，或在 A4 输入
+        <code>=SUM(A1:A2)</code>。循环引用会显示
+        <span class="bad">#CIRC</span>。
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const COLS = 10; // A-J
+        const ROWS = 20; // 1-20
+        const sheetEl = document.getElementById("sheet");
+        const formulaBar = document.getElementById("formulaBar");
+        const btnSum = document.getElementById("btnSum");
+        const btnClear = document.getElementById("btnClear");
+
+        // data stores raw input (what user typed) and formula mapping
+        const raw = {}; // raw[cellId] = string entered (e.g. '=A1+10' or 'hello' or '123')
+        const cache = {}; // cache[cellId] = computed value (string or number)
+
+        function colToName(n) {
+          // 0 -> A
+          let s = "";
+          while (n >= 0) {
+            s = String.fromCharCode(65 + (n % 26)) + s;
+            n = Math.floor(n / 26) - 1;
+          }
+          return s;
+        }
+        function nameToCol(name) {
+          let v = 0;
+          for (let i = 0; i < name.length; i++)
+            v = v * 26 + (name.charCodeAt(i) - 64);
+          return v - 1;
+        }
+
+        function buildTable() {
+          sheetEl.innerHTML = "";
+          const thead = document.createElement("thead");
+          const headRow = document.createElement("tr");
+          headRow.appendChild(document.createElement("th"));
+          for (let c = 0; c < COLS; c++) {
+            const th = document.createElement("th");
+            th.textContent = colToName(c);
+            headRow.appendChild(th);
+          }
+          thead.appendChild(headRow);
+          sheetEl.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          for (let r = 1; r <= ROWS; r++) {
+            const tr = document.createElement("tr");
+            const th = document.createElement("th");
+            th.textContent = r;
+            tr.appendChild(th);
+            for (let c = 0; c < COLS; c++) {
+              const td = document.createElement("td");
+              td.className = "cell";
+              const id = colToName(c) + r;
+              td.setAttribute("data-cell", id);
+              td.setAttribute("contenteditable", "true");
+              td.addEventListener("focus", onCellFocus);
+              td.addEventListener("blur", onCellBlur);
+              td.addEventListener("keydown", onCellKeyDown);
+              td.addEventListener("input", onCellInput);
+              tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+          }
+          sheetEl.appendChild(tbody);
+        }
+
+        function onCellFocus(e) {
+          const id = e.target.getAttribute("data-cell");
+          const v = raw[id] !== undefined ? raw[id] : "";
+          formulaBar.value = v;
+          currentCell = e.target;
+        }
+        function onCellBlur(e) {
+          const id = e.target.getAttribute("data-cell");
+          // store raw text (user typed). If it starts with '=' we treat as formula
+          raw[id] = e.target.textContent.trim();
+          recalcAll();
+          updateAllCellsDisplay();
+        }
+        function onCellKeyDown(e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            e.target.blur();
+            // move down
+            const id = e.target.getAttribute("data-cell");
+            const match = id.match(/([A-Z]+)(\d+)/);
+            if (match) {
+              const col = nameToCol(match[1]);
+              const row = parseInt(match[2], 10) + 1;
+              const next = document.querySelector(
+                '[data-cell="' + colToName(col) + row + '"]'
+              );
+              if (next) next.focus();
+            }
+          }
+        }
+        function onCellInput(e) {
+          // live update formula bar
+          const id = e.target.getAttribute("data-cell");
+          formulaBar.value = e.target.textContent;
+        }
+
+        formulaBar.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (currentCell) {
+              currentCell.textContent = formulaBar.value;
+              raw[currentCell.getAttribute("data-cell")] = formulaBar.value;
+              currentCell.blur();
+              recalcAll();
+              updateAllCellsDisplay();
+            }
+          }
+        });
+
+        btnSum.addEventListener("click", () => {
+          // insert SUM() into formula bar at cursor or append
+          const pos = formulaBar.selectionStart || formulaBar.value.length;
+          const v = formulaBar.value;
+          const newv = v.slice(0, pos) + "SUM()" + v.slice(pos);
+          formulaBar.value = newv;
+          formulaBar.focus();
+          formulaBar.selectionStart = formulaBar.selectionEnd = pos + 4;
+        });
+
+        btnClear.addEventListener("click", () => {
+          if (confirm("确认清空所有单元格？")) {
+            rawClear();
+            recalcAll();
+            updateAllCellsDisplay();
+          }
+        });
+
+        function rawClear() {
+          for (const k in raw) delete raw[k];
+          for (const k in cache) delete cache[k];
+          document
+            .querySelectorAll("[data-cell]")
+            .forEach((td) => (td.textContent = ""));
+        }
+
+        // expand range like A1:A3 or A1:C3 to array of cell ids
+        function expandRange(token) {
+          token = token.replace(/\s+/g, "");
+          if (!token.includes(":")) return [token];
+          const [a, b] = token.split(":");
+          const ma = a.match(/([A-Z]+)(\d+)/i);
+          const mb = b.match(/([A-Z]+)(\d+)/i);
+          if (!ma || !mb) return [];
+          const col1 = nameToCol(ma[1].toUpperCase());
+          const row1 = parseInt(ma[2], 10);
+          const col2 = nameToCol(mb[1].toUpperCase());
+          const row2 = parseInt(mb[2], 10);
+          const fromC = Math.min(col1, col2),
+            toC = Math.max(col1, col2);
+          const fromR = Math.min(row1, row2),
+            toR = Math.max(row1, row2);
+          const res = [];
+          for (let c = fromC; c <= toC; c++)
+            for (let r = fromR; r <= toR; r++) res.push(colToName(c) + r);
+          return res;
+        }
+
+        // evaluate cell with recursion and cycle detection
+        function evaluateCell(id, seen) {
+          if (seen.has(id)) return "#CIRC";
+          if (cache[id] !== undefined) return cache[id];
+          seen.add(id);
+          const input = raw[id] !== undefined ? raw[id] : "";
+          if (!input || input[0] !== "=") {
+            // not a formula; attempt to parse number
+            const n = parseFloat(input);
+            cache[id] = isNaN(n) ? input : n;
+            seen.delete(id);
+            return cache[id];
+          }
+          let expr = input.slice(1);
+
+          // handle SUM(...) and AVG(...)
+          expr = expr.replace(/SUM\s*\(([^)]+)\)/gi, function (_, inner) {
+            const parts = inner
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            let ssum = 0;
+            parts.forEach((p) => {
+              if (p.includes(":")) {
+                const cells = expandRange(p);
+                cells.forEach((c) => {
+                  const v = evaluateCell(c, new Set(seen));
+                  const num = parseFloat(v);
+                  if (!isNaN(num)) ssum += num;
+                });
+              } else {
+                const v = evaluateCell(p, new Set(seen));
+                const num = parseFloat(v);
+                if (!isNaN(num)) ssum += num;
+              }
+            });
+            return "(" + ssum + ")";
+          });
+          expr = expr.replace(/AVG\s*\(([^)]+)\)/gi, function (_, inner) {
+            const parts = inner
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            let ssum = 0,
+              cnt = 0;
+            parts.forEach((p) => {
+              if (p.includes(":")) {
+                const cells = expandRange(p);
+                cells.forEach((c) => {
+                  const v = evaluateCell(c, new Set(seen));
+                  const num = parseFloat(v);
+                  if (!isNaN(num)) {
+                    ssum += num;
+                    cnt++;
+                  }
+                });
+              } else {
+                const v = evaluateCell(p, new Set(seen));
+                const num = parseFloat(v);
+                if (!isNaN(num)) {
+                  ssum += num;
+                  cnt++;
+                }
+              }
+            });
+            return cnt ? "(" + ssum / cnt + ")" : "(0)";
+          });
+
+          // replace cell references like A1 with their numeric value (or 0 if not numeric)
+          expr = expr.replace(/([A-Z]+\d+)/g, function (match) {
+            const val = evaluateCell(match, new Set(seen));
+            const n = parseFloat(val);
+            return isNaN(n) ? "0" : n;
+          });
+
+          // final safety check: allow only digits, +-*/(). and spaces
+          if (!/^[0-9+\-*/()., \s]+$/.test(expr)) {
+            cache[id] = "#ERR";
+            seen.delete(id);
+            return cache[id];
+          }
+
+          try {
+            // eslint-disable-next-line no-new-func
+            const v = Function("return (" + expr + ")")();
+            cache[id] =
+              typeof v === "number" && !isFinite(v)
+                ? "#ERR"
+                : typeof v === "number"
+                ? v
+                : v;
+          } catch (e) {
+            cache[id] = "#ERR";
+          }
+          seen.delete(id);
+          return cache[id];
+        }
+
+        function recalcAll() {
+          // clear cache and recalc
+          for (const k in cache) delete cache[k];
+          // evaluate every cell to fill cache
+          document.querySelectorAll("[data-cell]").forEach((td) => {
+            const id = td.getAttribute("data-cell");
+            evaluateCell(id, new Set());
+          });
+        }
+
+        function updateAllCellsDisplay() {
+          document.querySelectorAll("[data-cell]").forEach((td) => {
+            const id = td.getAttribute("data-cell");
+            // if focused, show raw input; otherwise show computed value
+            if (document.activeElement === td) {
+              td.textContent = raw[id] !== undefined ? raw[id] : "";
+            } else {
+              const val = cache[id];
+              td.textContent = val === undefined ? raw[id] || "" : val;
+            }
+          });
+        }
+
+        // initial build
+        let currentCell = null;
+        buildTable();
+        recalcAll();
+        updateAllCellsDisplay();
+
+        // click outside to commit formula bar change
+        document.addEventListener("click", (e) => {
+          if (e.target === formulaBar) return;
+          if (currentCell && document.activeElement !== formulaBar) {
+            // if formula bar has changed, commit
+            if (
+              formulaBar.value !==
+              (raw[currentCell.getAttribute("data-cell")] || "")
+            ) {
+              currentCell.textContent = formulaBar.value;
+              raw[currentCell.getAttribute("data-cell")] = formulaBar.value;
+              recalcAll();
+              updateAllCellsDisplay();
+            }
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
