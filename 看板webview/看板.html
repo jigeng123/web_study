@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Simple Kanban 看板模板</title>
     <style>
-      /* ji1全局颜色-按钮-卡片-背景 */
+      /* JIGENG全局颜色-按钮-卡片-背景 */
       :root {
         --bg: #232b35;
         --card: #f8e4b3;
@@ -192,7 +192,7 @@
     </template>
 
     <script>
-      // 简单的看板实现：支持列与卡片的增删、拖拽、列名/卡片内容编辑、本地存储、导入导出
+      //JIGENG简单的看板实现：支持列与卡片的增删、拖拽、列名/卡片内容编辑、本地存储、导入导出
       //ji1全局变量
       const boardEl = document.getElementById("board");
       const addColumnBtn = document.getElementById("add-column");
@@ -201,12 +201,11 @@
       const fileInput = document.getElementById("file-input");
       const colTpl = document.getElementById("column-template");
       const cardTpl = document.getElementById("card-template");
-
+      //全局的
       let state = { columns: [] };
       const STORAGE_KEY = "simple_kanban_v1";
       // ji1初始化+加载+保存
       // 初始化：尝试从 localStorage 读取，否则创建默认列
-
       async function load() {
         const raw = localStorage.getItem(STORAGE_KEY);
         // quicker替换成:const raw =await $quicker.getVar("kanbanDate");
@@ -230,7 +229,6 @@
         }
         render();
       }
-
       async function save() {
         const content = JSON.stringify(state);
         localStorage.setItem(STORAGE_KEY, content);

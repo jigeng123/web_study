@@ -82,7 +82,7 @@
       <p>
         这个版本允许您使用<strong>原生 JavaScript</strong>
         编写公式。我们提供了一个便捷的辅助函数
-        <code>v('ID')</code> 来获取单元格的值。
+        <code>gID('ID')</code> 来获取单元格的值。
       </p>
 
       <h3>如何使用</h3>
@@ -94,18 +94,18 @@
           <ul>
             <li>
               <strong>基本运算:</strong>
-              <code>=v('A1') * 0.1</code> (计算A1的10%)
+              <code>=gID(A1) * 0.1</code> (计算A1的10%)
             </li>
             <li>
-              <strong>多单元格运算:</strong> <code>=v('A1') + v('A2')</code>
+              <strong>多单元格运算:</strong> <code>=gID(A1) + gID(A2)</code>
             </li>
             <li>
               <strong>使用JS内置函数:</strong>
-              <code>=Math.sqrt(v('A2'))</code> (计算A2的平方根)
+              <code>=Math.sqrt(gID(A2))</code> (计算A2的平方根)
             </li>
             <li>
               <strong>字符串拼接:</strong>
-              <code>='总计: ' + (v('A1') + v('A2'))</code>
+              <code>='总计: ' + (gID(A1) + gID(A2))</code>
             </li>
             <li>
               <strong>完整的原生JS (不推荐，但可行):</strong>
@@ -159,12 +159,12 @@
 
     <script>
       /**
-       * 辅助函数 v(cellId)
+       * 辅助函数 gID(cellId)
        * 用于方便地获取单元格的值并转换为数字。
        * @param {string} cellId - 单元格的ID，例如 'A1'。
        * @returns {number} - 返回单元格的数值，如果无效则返回 0。
        */
-      window.v = function (cellId) {
+      window.gID = function (cellId) {
         const cell = document.getElementById(cellId);
         if (!cell) {
           console.warn(`Cell with ID "${cellId}" not found.`);
@@ -194,17 +194,29 @@
         };
 
         /**
-         * 计算包含JavaScript代码的公式字符串
-         * @param {string} formula - 以 '=' 开头的JS公式，例如 '=v("A1")+v("A2")'
+         * 把公式字符串（可以以 '=' 开头）中的不带引号的单元格引用
+         * gID(A1) / gID(a1) 自动转换为 gID("A1")
+         * @param {string} formula - 以 '=' 开头的公式的表达式
+         * @returns {string} - 转换后的表达式（不含开头的 '='）
+         */
+        function transformFormula(formula) {
+          // 去掉开头=号
+          const expr = formula.substring(1);
+          // 将 gID(A1) 或 gID( a1 ) 等形式替换为 gID("A1")
+          return expr.replace(
+            /gID\(([^)]*)\)/gi,
+            (match, col) => `gID("${col.toUpperCase()}")`
+          );
+        }
+
+        /**
+         * 计算包含 JavaScript 代码的公式字符串
+         * @param {string} formula - 以 '=' 开头的JS公式，例如 '=gID(A1)+gID(A2)'
          * @returns {any} - 返回JS代码的执行结果
          */
         const evaluateFormula = (formula) => {
-          // 移除开头的 '='
-          const expression = formula.substring(1);
+          const expression = transformFormula(formula);
 
-          // 直接将字符串作为JavaScript代码执行
-          // 使用 Function 构造函数比 eval() 更安全
-          // 因为我们的辅助函数 v() 是全局的 (window.v)，所以在这里可以访问到
           try {
             return new Function(`return ${expression}`)();
           } catch (error) {
@@ -213,18 +225,6 @@
         };
 
         cells.forEach((cell) => {
-          cell.addEventListener("input", (event) => {
-            const inputElement = event.target;
-            const value = inputElement.value;
-
-            if (value.startsWith("=")) {
-              inputElement.dataset.formula = value;
-            } else {
-              delete inputElement.dataset.formula;
-            }
-            recalculateAll();
-          });
-
           cell.addEventListener("focus", (event) => {
             const inputElement = event.target;
             if (inputElement.dataset.formula) {
@@ -233,6 +233,13 @@
           });
 
           cell.addEventListener("blur", (event) => {
+            const inputElement = event.target;
+            const value = inputElement.value;
+            if (value.startsWith("=")) {
+              inputElement.dataset.formula = value;
+            } else {
+              delete inputElement.dataset.formula;
+            }
             recalculateAll();
           });
         });
