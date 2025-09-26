@@ -3,24 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>数据结构渲染app模板</title>
+    <title>json转html模板</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <!-- app注释 -->
-    <h1>动态渲染示例</h1>
+    <h1>json_to_html</h1>
     <!-- 测试按钮 -->
     <div class="controls">
-      <button onclick="initialRender()">首次渲染</button>
-      <button onclick="updateRender()">更新渲染 (修改数据后)</button>
-      <button onclick="clearRender()">清空</button>
-      <button onclick="saveData()">💾 导出数据</button>
+      <button onclick="activeFileToJson()">加载filedata转为json</button>
+      <button onclick="activeRenderHtml()">渲染html</button>
+      <button onclick="saveJson()">保存json(控制台)</button>
     </div>
     <!-- 我们的JS代码将在这个div中创建和更新元素 -->
     <div id="app-container"></div>
-
-    <script src="renderer.js"></script>
+    <script></script>
     <script src="load.js"></script>
+    <script src="renderer.js"></script>
     <script src="save.js"></script>
   </body>
 </html>

@@ -1,0 +1,32 @@
+[
+    {
+        
+        "id": "uniID-1",
+        "type": "h1",
+        "text": "测试内容",
+        "str": "1",
+        "dic": {
+            "c": "3",
+            "d": "4"
+        },
+        "children": [
+            {
+                "id": "uniID-2",
+                "type": "p",
+                "text": "子节点--无id",
+                "str": "子节点b数据"
+            }
+        ]
+    },
+    {
+        "id": "uniID-3",
+        "type": "p",
+        "text": "无id",
+        "str": "特殊数据b",
+        "list": [
+            "a",
+            "b",
+            "c"
+        ]
+    }
+]

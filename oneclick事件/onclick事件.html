@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <body>
+    <button id="1" onclick="x()">1</button>
+    <script>
+      function y() {
+        const jj = document.getElementById("1");
+        jj.textContent = "3";
+      }
+      window.x = () => {
+        y();
+      };
+    </script>
+  </body>
+</html>
