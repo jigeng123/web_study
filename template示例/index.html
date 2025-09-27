@@ -1,0 +1,60 @@
+<!-- 
+template在加载页面时不会呈现，
+但随后可以在运行时
+使用 JavaScript 实例化。 
+-->
+<style>
+  table {
+    background: #000;
+  }
+  table td {
+    background: #fff;
+  }
+</style>
+<table id="producttable">
+  <!-- ji1构建一个表头 -->
+  <thead>
+    <tr>
+      <td>UPC_Code</td>
+      <td>Product_Name</td>
+    </tr>
+  </thead>
+  <!-- ji1这里是表body -->
+  <tbody>
+    <!-- 现有数据可以可选地包括在这里 -->
+  </tbody>
+</table>
+<!-- ji1创建一个template -->
+<template id="productrow">
+  <tr>
+    <td class="record"></td>
+    <td></td>
+  </tr>
+</template>
+<script>
+  // 现代浏览器一般支持template
+  // temlate有个属性content , 这个属性是只读的DocumentFragment
+  // 包含了模板所表示的 DOM 树。
+
+  // ji1找到模板的id
+  let t = document.querySelector("#productrow"),
+    // ji2找到模板内的内容,一个个更改
+    td = t.content.querySelectorAll("td");
+  td[0].textContent = "1235646565";
+  td[1].textContent = "Stuff";
+
+  // ji3找到tbody,返回所有的tbody列表
+  let tb = document.getElementsByTagName("tbody");
+  // ji4复制一个dom元素(importNode),第二个参数决定是否拷贝子集
+  let clone = document.importNode(t.content, true);
+  // ji5添加到目标
+  tb[0].appendChild(clone);
+
+  // ji5要添加新的,只需要更改模板的值再次复制即可
+  td[0].textContent = "0384928528";
+  td[1].textContent = "Acme Kidney Beans";
+
+  // 克隆新行并将其插入表中
+  let clone2 = document.importNode(t.content, true);
+  tb[0].appendChild(clone2);
+</script>

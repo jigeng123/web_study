@@ -1,0 +1,44 @@
+#app-container {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+.ji {
+    border: 1px, solid, #321b1b;
+    padding: 5px;
+}
+
+.type {
+    width: 200px;
+    height: 50px;
+    font-size: 20px;
+    background: #e98b8b;
+}
+
+.str {
+    background: #a4e2b2;
+}
+
+.dic-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.dic-container>* {
+    color:#001389;
+    display: block;
+    background: #f7baba;
+    width: 100%;
+    text-align: center;
+    margin:50px 50px;
+}
+
+.list-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.list-container>*{
+    
+}

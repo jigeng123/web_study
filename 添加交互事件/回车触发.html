@@ -1,0 +1,17 @@
+<input type="text" id="myInput" placeholder="按回车提交" />
+
+<script>
+  const input = document.getElementById("myInput");
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      // 检查是否按下回车
+      myFunction(input.value);
+      input.value = ""; // 可选：清空输入框
+    }
+  });
+
+  function myFunction(value) {
+    console.log("回车触发，输入内容:", value);
+  }
+</script>

@@ -1,0 +1,25 @@
+<p>按下ctrl+s/Alt+Shift+X/Ctrl+Alt+D激活事件</p>
+<p id="1">展示</p>
+<script>
+  const p = document.getElementById("1");
+  document.addEventListener("keydown", function (e) {
+    // 示例：Ctrl + S
+    if (e.ctrlKey && e.key === "s") {
+      e.preventDefault(); // 阻止浏览器默认保存行为
+      p.textContent = "触发 Ctrl+S 事件";
+      console.log("触发 Ctrl+S 事件");
+    }
+
+    // 示例：Alt + Shift + X
+    if (e.altKey && e.shiftKey && e.key.toLowerCase() === "x") {
+      p.textContent = "触发 Alt+Shift+X 事件";
+      console.log("触发 Alt+Shift+X 事件");
+    }
+
+    // 示例：Ctrl + Alt + D
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "d") {
+      p.textContent = "触发 Ctrl+Alt+D 事件";
+      console.log("触发 Ctrl+Alt+D 事件");
+    }
+  });
+</script>

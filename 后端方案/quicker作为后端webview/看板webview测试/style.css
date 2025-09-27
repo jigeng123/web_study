@@ -1,0 +1,263 @@
+/* JIGENG全局颜色-按钮-卡片-背景 */
+:root {
+    --bg: #232b35;
+    --card: #f8e4b3;
+    --muted: #6186cf;
+    --accent: #562471;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Microsoft YaHei", Arial, sans-serif;
+    margin: 0;
+    background: var(--bg);
+    color: #111;
+}
+
+/* ji1标题栏 */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: linear-gradient(90deg, #a2afe6, #e87bb2, #71f362);
+    border-bottom: 1px solid #0c3483;
+}
+
+header h1 {
+    font-size: 16px;
+    margin: 0;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+button {
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+button.ghost {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid rgba(37, 99, 235, 0.12);
+}
+
+.board {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    align-items: flex-start;
+    overflow: auto;
+    height: calc(100vh - 75px);
+}
+
+/* ji1列表样式 */
+.column {
+    min-width: 280px;
+    border-radius: 10px;
+    padding: 5px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+}
+
+.board .column:nth-child(3n + 1) {
+    background: linear-gradient(180deg, #a2afe6, #cfb0b0);
+}
+
+.board .column:nth-child(3n + 2) {
+    background: linear-gradient(180deg, #e87bb2, #f3faca);
+}
+
+.board .column:nth-child(3n) {
+    background: linear-gradient(180deg, #71f362, #cfb0b0);
+}
+
+.col-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.col-header h2 {
+    font-size: 14px;
+    margin: 0;
+}
+
+.cards {
+    flex: 1;
+    overflow: auto;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 删除按钮改成右下角小 x */
+.card {
+    position: relative;
+    /* 允许绝对定位按钮 */
+    background: var(--card);
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(66, 33, 84, 0.4);
+    cursor: grab;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #0ee019;
+    /* 勾选时的颜色 */
+    cursor: pointer;
+}
+
+.card .del-card-btn,
+.card .card-checkbox {
+    position: absolute;
+    top: 4px;
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    margin: 0;
+    font-size: 14px;
+    line-height: 15px;
+    text-align: center;
+    border: none;
+    border-radius: 50%;
+    background: rgba(240, 152, 108, 0.4);
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.card .del-card-btn {
+    right: 4px;
+}
+
+.card .card-checkbox {
+    left: 4px;
+}
+
+.card .del-card-btn:hover {
+    background: #ff4d4f;
+    /* 红色背景 */
+    color: #fff;
+    /* 白色 x */
+}
+
+.card-title {
+    cursor: text;
+    padding: 0 2px;
+    margin-right: 15px;
+    margin-left: 15px;
+    font-family: "Microsoft YaHei UI", sans-serif;
+    /* 优先微软雅黑UI */
+    color: #74563e;
+    font-weight: 600;
+    text-align: center;
+    transition: color 0.3s, font-size 0.3s;
+    /* 水平居中 */
+}
+
+.card-title:empty:before {
+    content: "新任务";
+    /* 占位文字 */
+    color: #d0aacb;
+    cursor: text;
+    pointer-events: none;
+    /* 点击不会阻挡编辑 */
+}
+
+.card-desc {
+    cursor: text;
+    background-color: #ffffff64;
+    border-radius: 5px;
+    padding: 4px;
+    margin-top: 4px;
+    box-shadow: inset 0 2px 2px rgba(81, 9, 90, 0.2);
+}
+
+.card-desc:empty:before {
+    content: "内容";
+    /* 占位文字 */
+    color: #c2bdb7;
+    pointer-events: none;
+}
+
+.card.dragging {
+    opacity: 0.6;
+    transform: scale(0.98);
+}
+
+.add-card {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+}
+
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #e6e9ef;
+}
+
+.small {
+    font-size: 13px;
+    color: #173f38;
+}
+
+footer {
+    padding: 12px 20px;
+    background: #fff;
+    border-top: 1px solid #e6e9ef;
+}
+
+.card:has(.card-checkbox:checked) {
+    background-color: #f0f0f0;
+    /* 卡片背景色 */
+    border: 1px solid #ccc;
+    /* 可选边框变化 */
+    color: #aaa;
+    margin: 0;
+    padding: 0;
+    /* 默认文字颜色，可继承到子元素 */
+}
+
+.card:has(.card-checkbox:checked) .card-title {
+    text-decoration: line-through;
+    color: rgb(171, 171, 171);
+    font-size: 12px;
+    /* 可选，标记完成 */
+}
+
+.card:has(.card-checkbox:checked) .card-desc {
+    display: none;
+}
+
+/* responsive */
+@media (max-width: 720px) {
+    .board {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .column {
+        min-width: 220px;
+    }
+}

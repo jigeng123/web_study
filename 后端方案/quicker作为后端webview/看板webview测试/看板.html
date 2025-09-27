@@ -4,166 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Simple Kanban 看板模板</title>
-    <style>
-      /* JIGENG全局颜色-按钮-卡片-背景 */
-      :root {
-        --bg: #232b35;
-        --card: #f8e4b3;
-        --muted: #6186cf;
-        --accent: #562471;
-      }
-      * {
-        box-sizing: border-box;
-      }
-      body {
-        font-family: "Microsoft YaHei", Arial, sans-serif;
-        margin: 0;
-        background: var(--bg);
-        color: #111;
-      }
-
-      /* ji1标题栏 */
-      header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 20px;
-        background: linear-gradient(90deg, #a2afe6, #e87bb2, #71f362);
-        border-bottom: 1px solid #0c3483;
-      }
-      header h1 {
-        font-size: 16px;
-        margin: 0;
-      }
-      .actions {
-        display: flex;
-        gap: 8px;
-      }
-      button {
-        background: var(--accent);
-        color: #fff;
-        border: 0;
-        padding: 8px 12px;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-      button.ghost {
-        background: transparent;
-        color: var(--accent);
-        border: 1px solid rgba(37, 99, 235, 0.12);
-      }
-
-      .board {
-        display: flex;
-        gap: 16px;
-        padding: 20px;
-        align-items: flex-start;
-        overflow: auto;
-        height: calc(100vh - 75px);
-      }
-      /* ji1列表样式 */
-      .column {
-        min-width: 280px;
-        border-radius: 10px;
-        padding: 12px;
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-        display: flex;
-        flex-direction: column;
-        max-height: 100%;
-      }
-      .board .column:nth-child(3n + 1) {
-        background: linear-gradient(180deg, #a2afe6, #cfb0b0);
-      }
-
-      .board .column:nth-child(3n + 2) {
-        background: linear-gradient(180deg, #e87bb2, #f3faca);
-      }
-
-      .board .column:nth-child(3n) {
-        background: linear-gradient(180deg, #71f362, #cfb0b0);
-      }
-      .col-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
-      .col-header h2 {
-        font-size: 14px;
-        margin: 0;
-      }
-      .cards {
-        flex: 1;
-        overflow: auto;
-        padding: 6px;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .card {
-        background: var(--card);
-        padding: 10px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(12, 18, 31, 0.04);
-        cursor: grab;
-      }
-      .card.dragging {
-        opacity: 0.6;
-        transform: scale(0.98);
-      }
-      .add-card {
-        margin-top: 8px;
-        display: flex;
-        gap: 6px;
-      }
-      input[type="text"],
-      textarea {
-        width: 100%;
-        padding: 8px;
-        border-radius: 6px;
-        border: 1px solid #e6e9ef;
-      }
-      .small {
-        font-size: 13px;
-        color: var(--muted);
-      }
-      footer {
-        padding: 12px 20px;
-        background: #fff;
-        border-top: 1px solid #e6e9ef;
-      }
-
-      /* responsive */
-      @media (max-width: 720px) {
-        .board {
-          padding: 12px;
-          gap: 10px;
-        }
-        .column {
-          min-width: 220px;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <!-- 标题栏 -->
     <header>
-      <h1>Kanban 看板 — 模板</h1>
+      <h1>JI-Kanban</h1>
       <div class="actions">
         <button id="add-column">+ 添加列</button>
-        <button id="export" class="ghost">导出 JSON</button>
-        <button id="import" class="ghost">导入 JSON</button>
       </div>
     </header>
     <!-- 主区域-创建不同的列 -->
     <main class="board" id="board"></main>
-
-    <input
-      type="file"
-      id="file-input"
-      accept="application/json"
-      style="display: none"
-    />
 
     <template id="column-template">
       <div class="column" draggable="false">
@@ -175,9 +27,7 @@
           </div>
         </div>
         <div class="cards"></div>
-        <div class="add-card">
-          <input type="text" class="new-card-input" placeholder="卡片标题..." />
-        </div>
+        <div class="add-card"></div>
       </div>
     </template>
 
@@ -186,228 +36,14 @@
         <div class="card-title" contenteditable="true">新任务</div>
         <div class="card-desc small" contenteditable="true">描述（可选）</div>
         <div style="display: flex; justify-content: flex-end; margin-top: 6px">
-          <button class="del-card-btn ghost">删除</button>
+          <input type="checkbox" class="card-checkbox" id="cb1" />
+          <button class="del-card-btn ghost">x</button>
         </div>
       </div>
     </template>
-
-    <script>
-      //JIGENG简单的看板实现：支持列与卡片的增删、拖拽、列名/卡片内容编辑、本地存储、导入导出
-      //ji1全局变量
-      const boardEl = document.getElementById("board");
-      const addColumnBtn = document.getElementById("add-column");
-      const exportBtn = document.getElementById("export");
-      const importBtn = document.getElementById("import");
-      const fileInput = document.getElementById("file-input");
-      const colTpl = document.getElementById("column-template");
-      const cardTpl = document.getElementById("card-template");
-      //全局的
-      let state = { columns: [] };
-      const STORAGE_KEY = "simple_kanban_v1";
-      // ji1初始化+加载+保存
-      // 初始化：尝试从 localStorage 读取，否则创建默认列
-      async function load() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        // quicker替换成:const raw =await $quicker.getVar("kanbanDate");
-        if (raw) {
-          try {
-            state = JSON.parse(raw);
-          } catch (e) {
-            state = { columns: [] };
-          }
-        }
-        if (!state.columns.length) {
-          state.columns = [
-            {
-              id: uid(),
-              title: "TODO",
-              cards: [{ id: uid(), title: "示例任务", desc: "可以编辑或删除" }],
-            },
-            { id: uid(), title: "进行中", cards: [] },
-            { id: uid(), title: "已完成", cards: [] },
-          ];
-        }
-        render();
-      }
-      async function save() {
-        const content = JSON.stringify(state);
-        localStorage.setItem(STORAGE_KEY, content);
-        // quicker替换成:chrome.webview.hostObjects.sync.v.setVar("kanbanDate", content);
-      }
-      //ji1构建唯一ID
-      function uid() {
-        return Math.random().toString(36).slice(2, 9);
-      }
-      // ji1渲染
-      function render() {
-        boardEl.innerHTML = "";
-        state.columns.forEach((col) =>
-          boardEl.appendChild(createColumnElement(col))
-        );
-        save();
-      }
-      //ji1创建列
-      function createColumnElement(col) {
-        const el = colTpl.content.cloneNode(true).querySelector(".column");
-        el.dataset.id = col.id;
-        el.querySelector(".col-title").textContent = col.title;
-
-        const cardsEl = el.querySelector(".cards");
-        col.cards.forEach((c) => cardsEl.appendChild(createCardElement(c)));
-
-        // 添加卡片按钮
-        el.querySelector(".add-card-btn").addEventListener("click", () => {
-          const title = el.querySelector(".new-card-input").value.trim();
-          addCard(col.id, title || "新任务");
-          el.querySelector(".new-card-input").value = "";
-        });
-
-        // 删除列
-        el.querySelector(".del-col-btn").addEventListener("click", () => {
-          if (!confirm("删除此列及其所有卡片？")) return;
-          state.columns = state.columns.filter((c) => c.id !== col.id);
-          render();
-        });
-
-        // 编辑列名
-        const titleEl = el.querySelector(".col-title");
-        titleEl.addEventListener("input", () => {
-          const v = titleEl.textContent.trim() || "未命名";
-          const target = state.columns.find((c) => c.id === col.id);
-          if (target) target.title = v;
-          save();
-        });
-
-        // ji1拖拽事件
-        // ji2在容器上悬浮
-        el.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          el.classList.add("drop-target");
-        });
-        //ji2离开容器
-        el.addEventListener("dragleave", () =>
-          el.classList.remove("drop-target")
-        );
-        //ji2释放时
-        el.addEventListener("drop", (e) => {
-          e.preventDefault();
-          el.classList.remove("drop-target");
-          const cardId = e.dataTransfer.getData("text/plain");
-          if (!cardId) return;
-          moveCardToColumn(cardId, col.id);
-        });
-
-        return el;
-      }
-      //ji1创建card
-      function createCardElement(card) {
-        const el = cardTpl.content.cloneNode(true).querySelector(".card");
-        el.dataset.id = card.id;
-        el.querySelector(".card-title").textContent = card.title;
-        el.querySelector(".card-desc").textContent = card.desc || "";
-
-        // 删除卡片
-        el.querySelector(".del-card-btn").addEventListener("click", () => {
-          if (!confirm("删除此卡片？")) return;
-          state.columns.forEach(
-            (c) => (c.cards = c.cards.filter((x) => x.id !== card.id))
-          );
-          render();
-        });
-
-        // 编辑卡片：同步到 state
-        el.querySelector(".card-title").addEventListener("input", (e) => {
-          updateCardField(card.id, "title", e.target.textContent);
-        });
-        el.querySelector(".card-desc").addEventListener("input", (e) => {
-          updateCardField(card.id, "desc", e.target.textContent);
-        });
-        //TODO拖拽事件全局监听,不要在构建时添加事件
-        // j21拖拽开始
-        el.addEventListener("dragstart", (ev) => {
-          ev.dataTransfer.setData("text/plain", card.id);
-          el.classList.add("dragging");
-        });
-        //ji2拖拽结束
-        el.addEventListener("dragend", () => {
-          el.classList.remove("dragging");
-          save();
-        });
-
-        return el;
-      }
-      //ji1创建新列
-      function addColumn(title = "新列") {
-        state.columns.push({ id: uid(), title, cards: [] });
-        render();
-      }
-      //ji1创建新的task
-      function addCard(colId, title = "新任务") {
-        const c = { id: uid(), title, desc: "" };
-        const col = state.columns.find((x) => x.id === colId);
-        if (col) col.cards.push(c);
-        render();
-      }
-      //ji1更新card
-      function updateCardField(cardId, field, value) {
-        for (const col of state.columns) {
-          const card = col.cards.find((c) => c.id === cardId);
-          if (card) {
-            card[field] = value;
-            save();
-            return;
-          }
-        }
-      }
-      //ji1删除列
-      function moveCardToColumn(cardId, targetColId) {
-        let moved = null;
-        state.columns.forEach((c) => {
-          const idx = c.cards.findIndex((x) => x.id === cardId);
-          if (idx > -1) {
-            moved = c.cards.splice(idx, 1)[0];
-          }
-        });
-        if (moved) {
-          const target = state.columns.find((x) => x.id === targetColId);
-          if (target) target.cards.push(moved);
-          render();
-        }
-      }
-
-      // ji1UI 按钮
-      addColumnBtn.addEventListener("click", () => addColumn());
-      exportBtn.addEventListener("click", () => {
-        const data = JSON.stringify(state, null, 2);
-        const blob = new Blob([data], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "kanban.json";
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-
-      importBtn.addEventListener("click", () => fileInput.click());
-      fileInput.addEventListener("change", (e) => {
-        const f = e.target.files[0];
-        if (!f) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-          try {
-            state = JSON.parse(reader.result);
-            render();
-            alert("导入成功");
-          } catch (err) {
-            alert("无效的 JSON 文件");
-          }
-        };
-        reader.readAsText(f);
-        fileInput.value = "";
-      });
-
-      // 启动
-      load();
-    </script>
+    <script src="js/utilites.js"></script>
+    <script src="js/column.js"></script>
+    <script src="js/cards.js"></script>
+    <script src="main.js"></script>
   </body>
 </html>

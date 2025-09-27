@@ -1,0 +1,32 @@
+<form id="form">
+  <input id="1" type="text" placeholder="text input" />
+  <input id="2" type="text" placeholder="password" />
+</form>
+<script>
+  const form = document.getElementById("form");
+  const input1 = document.getElementById("1");
+  const input2 = document.getElementById("2");
+  form.addEventListener(
+    "focus",
+    (event) => {
+      event.target.style.background = "pink";
+      event.target.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          // 检查是否按下回车
+          input2.value = "2"; // 可选：清空输入框
+          input2.focus();
+        }
+      });
+    },
+
+    true
+  );
+
+  form.addEventListener(
+    "blur",
+    (event) => {
+      event.target.style.background = "";
+    },
+    true
+  );
+</script>

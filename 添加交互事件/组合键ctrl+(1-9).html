@@ -1,0 +1,22 @@
+<div class="cloum">列 1</div>
+<div class="cloum">列 2</div>
+<div class="cloum">列 3</div>
+
+<script>
+  const columns = document.querySelectorAll(".cloum");
+
+  // 监听全局键盘事件
+  document.addEventListener("keydown", (e) => {
+    if (!e.altKey) return; // 只处理按下 Ctrl 的情况
+    // 获取按下的数字键 1~9
+    const key = e.key;
+    if (key >= "1" && key <= "9") {
+      e.preventDefault();
+      const index = parseInt(key, 10) - 1; // 转换成数组索引
+      if (index < columns.length) {
+        columns[index].textContent = `已修改为第 ${key} 列`;
+        console.log(`第 ${key} 列已修改`);
+      }
+    }
+  });
+</script>
