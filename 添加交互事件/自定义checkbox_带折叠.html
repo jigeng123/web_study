@@ -1,0 +1,56 @@
+<!-- 
+ ji1创建一个input复选框(内联),直接隐藏, 
+ ji2创建一个内联span对象(checkmark),直接会挤到input复选框
+ ji3checkmark设置为内联inline-block,设置宽高 ,设置before以及内容
+ ji4设置当input:checked时,checkmark的变化
+ ji5设置父级监控checked状态,将隐藏其他内容隐藏
+ -->
+<style>
+  /* 隐藏原生复选框 */
+  .custom-checkbox input {
+    position: absolute;
+    opacity: 0;
+  }
+
+  .custom-checkbox .checkmark {
+    /* 内联 */
+    display: inline-block;
+    /* 设置宽高字体 */
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+
+    cursor: pointer;
+    /* 去掉 border */
+    position: relative;
+  }
+  /* 非勾选状态 */
+  .custom-checkbox .checkmark::before {
+    font-size: 20px;
+    display: inline-block; /* 关键 */
+    transition: transform 0.3s ease; /* 添加过渡动画 */
+    content: "⛔";
+  }
+
+  /* 勾选状态 */
+  .custom-checkbox input:checked + .checkmark::before {
+    transform: rotate(-90deg);
+    /* content: "✅"; */
+  }
+  /* 使用兄弟节点,将其隐藏 */
+  .custom-checkbox:has(input:checked) + .targetText {
+    /* display: none; */
+    height: 0;
+    padding: 0;
+    margin: 0;
+    overflow: hidden; /* 避免内容溢出 */
+    transition: all 3s ease;
+  }
+</style>
+
+<label class="custom-checkbox">
+  <input type="checkbox" name="自定义复选框-折叠" />
+  <span class="checkmark"></span>
+</label>
+<div class="targetText">内部的内容</div>

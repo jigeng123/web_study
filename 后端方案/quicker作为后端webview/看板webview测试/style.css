@@ -59,18 +59,86 @@ button.ghost {
     align-items: flex-start;
     overflow: auto;
     height: calc(100vh - 75px);
+    transition: all 0.3s ease;
 }
 
 /* ji1列表样式 */
 .column {
-    min-width: 280px;
+    width: 280px;
     border-radius: 10px;
     padding: 5px;
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
     display: flex;
     flex-direction: column;
     max-height: 100%;
+    transition: all 0.3s ease;
 }
+
+/* 折叠列表 */
+
+.custom-checkbox input {
+    position: absolute;
+    opacity: 0;
+}
+
+.custom-checkbox .checkmark {
+    /* 内联 */
+    display: inline-block;
+    text-align: center;
+    cursor: pointer;
+    /* 去掉 border */
+    position: relative;
+}
+
+/* 非勾选状态 */
+.custom-checkbox .checkmark::before {
+    font-size: 15px;
+    /* 关键 */
+    transition: transform 0.3s ease;
+    /* 添加过渡动画 */
+    content: "⛔";
+}
+
+/* 勾选状态 */
+.custom-checkbox input:checked+.checkmark::before {
+    transform: rotate(-90deg);
+    /* content: "✅"; */
+}
+
+/* 使用兄弟节点,将兄弟节点隐藏 */
+
+.column:has(.custom-checkbox input:checked) {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    height: 200px;
+    width: 20px;
+}
+
+.custom-checkbox:has(input:checked)+.col-header {
+    /* 保持显示 */
+    writing-mode: vertical-rl;
+    /* 竖排文字（从右往左） */
+    text-orientation: upright;
+    padding: 0;
+    margin: 0;
+}
+
+.custom-checkbox:has(input:checked)+.col-header>div {
+    display: none;
+
+}
+
+.custom-checkbox:has(input:checked)+.col-header+.cards {
+    display: none;
+
+}
+
+.custom-checkbox:has(input:checked)+.col-header+.cards+.add-card {
+    display: none;
+}
+
 
 .board .column:nth-child(3n + 1) {
     background: linear-gradient(180deg, #a2afe6, #cfb0b0);
@@ -114,7 +182,6 @@ button.ghost {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(66, 33, 84, 0.4);
     cursor: grab;
-    transition: background-color 0.3s, color 0.3s;
 }
 
 input[type="checkbox"] {
@@ -178,7 +245,7 @@ input[type="checkbox"] {
     /* 占位文字 */
     color: #d0aacb;
     cursor: text;
-    pointer-events: none;
+    /* pointer-events: none; */
     /* 点击不会阻挡编辑 */
 }
 
@@ -195,12 +262,19 @@ input[type="checkbox"] {
     content: "内容";
     /* 占位文字 */
     color: #c2bdb7;
-    pointer-events: none;
+    /* pointer-events: none; */
 }
 
-.card.dragging {
+.dragging {
     opacity: 0.6;
     transform: scale(0.98);
+    transition: box-shadow 0.3s, border-color 0.3s;
+    background: linear-gradient(270deg, #d8a0dc, #c395e3, #c0aae785, #8bc2fc62);
+    background-size: 600% 600%;
+    transition: all 0.5s;
+    transform: rotate(-5deg);
+    /* 扩大渐变面积 */
+    animation: gradient-move 5s linear infinite;
 }
 
 .add-card {
@@ -251,13 +325,74 @@ footer {
 }
 
 /* responsive */
-@media (max-width: 720px) {
+@media (max-width: 840px) {
     .board {
         padding: 12px;
         gap: 10px;
     }
 
     .column {
-        min-width: 220px;
+        flex-shrink: 0;
+        /* 禁止收缩 */
+        width: 220px;
+    }
+}
+
+@media (max-width: 300px) {
+    .board {
+        display: flex;
+        padding: 12px;
+        gap: 10px;
+        flex-direction: column;
+    }
+
+    .column:has(.custom-checkbox input:checked) {
+        display: flex;
+        flex-direction: row;
+
+        height: 20px;
+        width: 220px;
+    }
+
+    .custom-checkbox:has(input:checked)+.col-header {
+        /* 保持显示 */
+        writing-mode: horizontal-tb;
+        /* 竖排文字（从右往左） */
+        text-orientation: upright;
+
+    }
+
+}
+
+
+.placeholder {
+    height: 50px;
+    border-radius: 4px;
+    border: 2px dashed #7d92ef;
+    margin: 1px 0;
+    transition: all 0.15s ease;
+    opacity: 0.6;
+    transform: scale(0.98);
+    transition: box-shadow 0.3s, border-color 0.3s;
+    background: linear-gradient(270deg, #d8a0dc, #c395e3, #c0aae785, #8bc2fc62);
+    background-size: 600% 600%;
+    /* 扩大渐变面积 */
+    animation: gradient-move 5s linear infinite;
+    /* ✅ 平滑过渡 */
+}
+
+/* 渐变色 */
+
+@keyframes gradient-move {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
     }
 }

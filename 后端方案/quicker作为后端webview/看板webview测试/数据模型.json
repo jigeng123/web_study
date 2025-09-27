@@ -1,0 +1,34 @@
+{
+  "columns": [
+    {
+      "id": "ov5fy07",
+      "title": "TODO",
+      "cards": [
+        {
+          "id": "nnzg3m3",
+          "title": "card",
+          "desc": "可以编辑card内容和标题",
+          "isDoen": "false"
+        }
+      ]
+    },
+    {
+      "id": "4ljlfae",
+      "title": "Doing",
+      "cards": []
+    },
+    {
+      "id": "j98qj69",
+      "title": "Done",
+      "cards": [
+        {
+          "id": "8ssz77x",
+          "title": "完成的card会折叠",
+          "desc": "",
+          "isDoen": "true",
+          "isDone": true
+        }
+      ]
+    }
+  ]
+}

@@ -33,25 +33,9 @@ function createColumnElement(col) {
     save();
   });
 
-  // ji1拖拽事件--列表作为容器,实现dragover/dragleave/drop的监听
-  // ji2在容器上悬浮
-  el.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    el.classList.add("drop-target");
-  });
-  //ji2离开容器
-  el.addEventListener("dragleave", () => el.classList.remove("drop-target"));
-  //ji2释放时
-  el.addEventListener("drop", (e) => {
-    e.preventDefault();
-    el.classList.remove("drop-target");
-    const cardId = e.dataTransfer.getData("text/plain");
-    if (!cardId) return;
-    moveCardToColumn(cardId, col.id);
-  });
-
   return el;
 }
+
 //ji1创建新列--创建一个数据结构,然后添加到state列表中
 function addColumn(title = "新列") {
   state.columns.push({ id: uid(), title, cards: [] });

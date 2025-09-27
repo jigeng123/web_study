@@ -23,10 +23,23 @@ async function load() {
       {
         id: uid(),
         title: "TODO",
-        cards: [{ id: uid(), title: "示例任务", desc: "可以编辑或删除" }],
+        cards: [
+          {
+            id: uid(),
+            title: "card",
+            desc: "可以编辑card内容和标题",
+            isDoen: false,
+          },
+        ],
       },
-      { id: uid(), title: "进行中", cards: [] },
-      { id: uid(), title: "已完成", cards: [] },
+      { id: uid(), title: "Doing", cards: [] },
+      {
+        id: uid(),
+        title: "Done",
+        cards: [
+          { id: uid(), title: "完成的card会折叠", desc: "", isDoen: true },
+        ],
+      },
     ];
   }
   render();
